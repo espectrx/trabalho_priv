@@ -14,24 +14,24 @@ import tempfile
 import sys, os
 
 sys.path.append(os.path.dirname(__file__))
-from processamento import extrair_dados_da_imagem
-from recomendacao import recomendar_roupas
-# Try to import your custom functions - with error handling
-# try:
-#     from processamento import extrair_dados_da_imagem
+# from processamento import extrair_dados_da_imagem
+# from recomendacao import recomendar_roupas
+Try to import your custom functions - with error handling
+try:
+    from processamento import extrair_dados_da_imagem
 
-#     PROCESSAMENTO_AVAILABLE = True
-# except ImportError:
-#     st.error("⚠️ Módulo 'processamento' não encontrado. Algumas funcionalidades estarão limitadas.")
-#     PROCESSAMENTO_AVAILABLE = False
+    PROCESSAMENTO_AVAILABLE = True
+except ImportError:
+    st.error("⚠️ Módulo 'processamento' não encontrado. Algumas funcionalidades estarão limitadas.")
+    PROCESSAMENTO_AVAILABLE = False
 
-# try:
-#     from recomendacao import recomendar_roupas
+try:
+    from recomendacao import recomendar_roupas
 
-#     RECOMENDACAO_AVAILABLE = True
-# except ImportError:
-#     st.warning("⚠️ Módulo 'recomendacao' não encontrado. Usando versão simplificada.")
-#     RECOMENDACAO_AVAILABLE = False
+    RECOMENDACAO_AVAILABLE = True
+except ImportError:
+    st.warning("⚠️ Módulo 'recomendacao' não encontrado. Usando versão simplificada.")
+    RECOMENDACAO_AVAILABLE = False
 
 # Page configuration
 # Page configuration - Coloque st.set_page_config como a primeira chamada do Streamlit
