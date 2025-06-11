@@ -16,7 +16,7 @@ import sys, os
 sys.path.append(os.path.dirname(__file__))
 # from processamento import extrair_dados_da_imagem
 # from recomendacao import recomendar_roupas
-Try to import your custom functions - with error handling
+#Try to import your custom functions - with error handling
 try:
     from processamento import extrair_dados_da_imagem
 
