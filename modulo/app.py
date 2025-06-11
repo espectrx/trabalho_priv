@@ -628,13 +628,15 @@ def substituir_roupas(image):
 def main():
     # Header
     st.markdown('<h1 class="main-header">VesteAI</h1>', unsafe_allow_html=True)
+    # Caminho absoluto relativo ao local deste arquivo
+slide_path = os.path.join(base_path, "..", "data", "slides", "slide1.png")
 
     # Exibe os slides no app
-    diretorio_slide = r'C:\Users\HOME\PycharmProjects\trabalhoFinal\trabalho'
-    st.image(Image.open(os.path.join(diretorio_slide, "data", "slides", "slide1.png")), use_container_width=True)
-    st.image(Image.open(os.path.join(diretorio_slide, "data", "slides", "slide2.png")), use_container_width=True)
-    st.image(Image.open(os.path.join(diretorio_slide, "data", "slides", "slide3.png")), use_container_width=True)
-    st.image(Image.open(os.path.join(diretorio_slide, "data", "slides", "slide4.png")), use_container_width=True)
+    diretorio_slide = os.path.dirname(os.path.abspath(__file__))
+    st.image(Image.open(os.path.join(diretorio_slide, "..", "data", "slides", "slide1.png")), use_container_width=True)
+    st.image(Image.open(os.path.join(diretorio_slide, "..", "data", "slides", "slide2.png")), use_container_width=True)
+    st.image(Image.open(os.path.join(diretorio_slide, "..", "data", "slides", "slide3.png")), use_container_width=True)
+    st.image(Image.open(os.path.join(diretorio_slide, "..", "data", "slides", "slide4.png")), use_container_width=True)
 
     st.markdown('<h1 class="main-header">🎨 Análise de Coloração Pessoal</h1>', unsafe_allow_html=True)
     st.markdown("**Upload uma foto para análise completa das suas características de cor e estilo!**")
