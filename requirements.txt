@@ -1,3 +1,4 @@
+gradio_client
 matplotlib==3.10.1
 mediapipe==0.10.21
 numpy==1.26.4
