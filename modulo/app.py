@@ -11,6 +11,9 @@ import glob
 from gradio_client import Client, file
 import shutil
 import tempfile
+import sys, os
+
+sys.path.append(os.path.dirname(__file__))
 
 # Try to import your custom functions - with error handling
 try:
