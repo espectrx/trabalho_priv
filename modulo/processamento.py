@@ -487,7 +487,7 @@ def extrair_dados_da_imagem(imagem,caminho=None):
     #     traceback.print_exc()
 
 
-    cv2.imshow("Imagem de Entrada", imagem)
+    #cv2.imshow("Imagem de Entrada", imagem)
 
     # ================================= ROSTO  =================================
     h, w, _ = imagem.shape
@@ -656,7 +656,7 @@ def extrair_dados_da_imagem(imagem,caminho=None):
 
         # ADICIONA NA IMAGEM
         cv2.rectangle(debug_img, (min_x, min_y), (max_x, max_y), (0, 255, 0), 1)
-        cv2.imshow("Rosto analisado", debug_img)
+        #cv2.imshow("Rosto analisado", debug_img)
 
     # =================================CONTRASTE =================================
     def bgr_to_gray_scale_0_10(bgr):
@@ -742,7 +742,7 @@ def extrair_dados_da_imagem(imagem,caminho=None):
         # MOSTRA A IMAGEM REALÇADA
         debug_img = imagem_realcada.copy()
         cv2.rectangle(debug_img, (x1, y1), (x2, y2), (0, 255, 0), 2)
-        cv2.imshow("Rosto novo", debug_img)
+        #cv2.imshow("Rosto novo", debug_img)
 
     # ================================= COMPARANDO RESULTADOS =================================
     # SUBTONS DE REFERÊNCIA
@@ -954,6 +954,6 @@ def visualizar_resultados(imagem, resultado, tom_de_pele=None, pouco_cabelo=None
 
     # EXIBIÇÃO
     cv2.namedWindow("Analise Corporal", cv2.WINDOW_NORMAL)
-    cv2.imshow("Analise Corporal", imagem_final)
+    #cv2.imshow("Analise Corporal", imagem_final)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
