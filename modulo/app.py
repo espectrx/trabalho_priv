@@ -628,8 +628,6 @@ def substituir_roupas(image):
 def main():
     # Header
     st.markdown('<h1 class="main-header">VesteAI</h1>', unsafe_allow_html=True)
-    # Caminho absoluto relativo ao local deste arquivo
-slide_path = os.path.join(base_path, "..", "data", "slides", "slide1.png")
 
     # Exibe os slides no app
     diretorio_slide = os.path.dirname(os.path.abspath(__file__))
