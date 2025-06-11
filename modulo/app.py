@@ -591,44 +591,53 @@ def substituir_roupas(image):
     uploaded_roupa_img = st.file_uploader("Arraste a imagem da roupa ou envie alguma de sua escolha:", type=["jpg", "png", "jpeg"])
 
     if image and uploaded_roupa_img:
-        # Converte a imagem PIL para um arquivo temporário
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as temp_model:
-            image.save(temp_model, format="PNG")
-            temp_model_path = temp_model.name
+        st.write("Preparando imagens para o modelo...")
 
-        # Salva a roupa enviada em arquivo temporário
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as temp_roupa:
-            temp_roupa.write(uploaded_roupa_img.read())
-            temp_roupa_path = temp_roupa.name
+        try:
+            # Salva imagem original do usuário (modelo)
+            temp_model_path = os.path.join(tempfile.gettempdir(), "model_image.png")
+            image.save(temp_model_path)
 
-        # Chama o modelo com os arquivos temporários
-        result = client.predict(
-            dict={
-                "background": file(temp_model_path),
-                "layers": [],  # pode adicionar camadas aqui
-                "composite": None
-            },
-            garm_img=file(temp_roupa_path),
-            garment_des="Roupa enviada pelo usuário",
-            is_checked=True,
-            is_checked_crop=False,
-            denoise_steps=30,
-            seed=42,
-            api_name="/tryon"
-        )
+            # Salva imagem da roupa
+            temp_roupa_path = os.path.join(tempfile.gettempdir(), "roupa_image.png")
+            with open(temp_roupa_path, "wb") as f:
+                f.write(uploaded_roupa_img.read())
 
-        output_path, masked_path = result
+            # Indica ao usuário que o processamento está em andamento
+            with st.spinner("Gerando imagem com nova roupa..."):
+                result = client.predict(
+                    dict={
+                        "background": file(temp_model_path),
+                        "layers": [],
+                        "composite": None
+                    },
+                    garm_img=file(temp_roupa_path),
+                    garment_des="Roupa enviada pelo usuário",
+                    is_checked=True,
+                    is_checked_crop=False,
+                    denoise_steps=30,
+                    seed=42,
+                    api_name="/tryon"
+                )
 
-        # Salva o resultado final em outro temporário
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as temp_out:
-            shutil.copy(output_path, temp_out.name)
-            temp_out_path = temp_out.name
+            # Garante que o resultado tenha dois caminhos válidos
+            if not isinstance(result, (list, tuple)) or len(result) < 1:
+                st.error("Erro: resposta inesperada do modelo.")
+                return
 
-        # Mostra imagem e botão de download
-        st.image(temp_out_path, caption="Resultado")
-        with open(temp_out_path, "rb") as f:
-            st.download_button("Baixar imagem gerada", f, file_name="resultado.png")
+            output_path = result[0]
 
+            # Copia a imagem de saída
+            temp_out_path = os.path.join(tempfile.gettempdir(), "resultado_final.png")
+            shutil.copy(output_path, temp_out_path)
+
+            # Exibe e permite download
+            st.image(temp_out_path, caption="Resultado")
+            with open(temp_out_path, "rb") as f:
+                st.download_button("Baixar imagem gerada", f, file_name="resultado.png")
+
+        except Exception as e:
+            st.error(f"Ocorreu um erro ao processar a imagem: {e}")
 
 def main():
     # Header
