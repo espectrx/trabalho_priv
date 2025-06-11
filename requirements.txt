@@ -13,3 +13,4 @@ tensorboard==2.19.0
 tensorboard-data-server==0.7.2
 torch==2.7.0
 torchvision==0.22.0
+transformers
