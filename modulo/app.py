@@ -628,17 +628,13 @@ def substituir_roupas(image):
 def main():
     # Header
     st.markdown('<h1 class="main-header">VesteAI</h1>', unsafe_allow_html=True)
-    slide1 = Image.open(r"C:\Users\HOME\Desktop\slide1.png")
-    slide2 = Image.open(r"C:\Users\HOME\Desktop\slide2.png")
-    slide3 = Image.open(r"C:\Users\HOME\Desktop\slide3.png")
-    slide4 = Image.open(r"C:\Users\HOME\Desktop\slide4.png")
 
-
-    # Exibe a imagem no app
-    st.image(slide1, use_container_width=True)
-    st.image(slide2, use_container_width=True)
-    st.image(slide3, use_container_width=True)
-    st.image(slide4, use_container_width=True)
+    # Exibe os slides no app
+    diretorio_slide = r'C:\Users\HOME\PycharmProjects\trabalhoFinal\trabalho'
+    st.image(Image.open(os.path.join(diretorio_slide, "data", "slides", "slide1.png")), use_container_width=True)
+    st.image(Image.open(os.path.join(diretorio_slide, "data", "slides", "slide2.png")), use_container_width=True)
+    st.image(Image.open(os.path.join(diretorio_slide, "data", "slides", "slide3.png")), use_container_width=True)
+    st.image(Image.open(os.path.join(diretorio_slide, "data", "slides", "slide4.png")), use_container_width=True)
 
     st.markdown('<h1 class="main-header">🎨 Análise de Coloração Pessoal</h1>', unsafe_allow_html=True)
     st.markdown("**Upload uma foto para análise completa das suas características de cor e estilo!**")
@@ -788,6 +784,7 @@ def main():
 
         # Section 4: Clothing recommendations
         st.divider()
+        caminho_roupas = r'C:\Users\HOME\PycharmProjects\trabalhoFinal\trabalho\data'
         st.subheader(f"🧥 Roupas para corpo {st.session_state.medidas['Tipo de corpo'].lower()}")
         st.subheader("OBJETIVO:")
         if st.session_state.medidas['Tipo de corpo'] == 'Triângulo Invertido':
@@ -859,7 +856,7 @@ def main():
                             - Leggings e calça skinny, saias justas
                             - Calças sem volume na região do quadril
                             """)
-            exibir_imagens_roupas(r'C:\Users\HOME\PycharmProjects\trabalhoFinal\trabalho\data\imagens_corpos\triângulo invertido')
+            exibir_imagens_roupas(os.path.join(caminho_roupas, "imagens_corpos", "triângulo invertido"))
 
         elif st.session_state.medidas['Tipo de corpo'] == 'Triângulo':
             st.markdown('**Suavizar os ombros e dar mais equilíbrio ou volume visual à parte inferior.**')
