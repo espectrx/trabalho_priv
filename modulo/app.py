@@ -228,7 +228,7 @@ def criar_painel_cores(medidas):
         img_pil = Image.fromarray(cv2.cvtColor(img_cv2, cv2.COLOR_BGR2RGB))
         draw = ImageDraw.Draw(img_pil)
         base_path = os.path.dirname(os.path.abspath(__file__))
-        fonte_path = os.path.join(base_path, "..", "data", "fonts", "arial.ttf")
+        fonte = os.path.join(base_path, "..", "data", "fonts", "arial.ttf")
 
         x, y = pos
 
