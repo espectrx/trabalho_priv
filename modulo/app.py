@@ -11,8 +11,26 @@ import glob
 from gradio_client import Client, file
 import shutil
 import tempfile
-from processamento import extrair_dados_da_imagem
-from recomendacao import recomendar_roupas
+
+# Try to import your custom functions - with error handling
+try:
+    from modulo.processamento import extrair_dados_da_imagem
+
+    PROCESSAMENTO_AVAILABLE = True
+except ImportError:
+    st.error("⚠️ Módulo 'processamento' não encontrado. Algumas funcionalidades estarão limitadas.")
+    PROCESSAMENTO_AVAILABLE = False
+
+try:
+    from modulo.recomendacao import recomendar_roupas
+
+    RECOMENDACAO_AVAILABLE = True
+except ImportError:
+    st.warning("⚠️ Módulo 'recomendacao' não encontrado. Usando versão simplificada.")
+    RECOMENDACAO_AVAILABLE = False
+
+# Page configuration
+
 # Page configuration
 # Page configuration - Coloque st.set_page_config como a primeira chamada do Streamlit
 st.set_page_config(
