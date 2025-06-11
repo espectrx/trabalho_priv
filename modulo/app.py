@@ -789,7 +789,9 @@ def main():
 
         # Section 4: Clothing recommendations
         st.divider()
-        caminho_roupas = r'C:\Users\HOME\PycharmProjects\trabalhoFinal\trabalho\data'
+        
+        diretorio_roupas = os.path.dirname(os.path.abspath(__file__))
+        
         st.subheader(f"🧥 Roupas para corpo {st.session_state.medidas['Tipo de corpo'].lower()}")
         st.subheader("OBJETIVO:")
         if st.session_state.medidas['Tipo de corpo'] == 'Triângulo Invertido':
@@ -861,7 +863,8 @@ def main():
                             - Leggings e calça skinny, saias justas
                             - Calças sem volume na região do quadril
                             """)
-            exibir_imagens_roupas(os.path.join(caminho_roupas, "imagens_corpos", "triângulo invertido"))
+            
+            exibir_imagens_roupas(os.path.join(diretorio_roupas, "..", "data", "imagens_corpos", "triângulo invertido")
 
         elif st.session_state.medidas['Tipo de corpo'] == 'Triângulo':
             st.markdown('**Suavizar os ombros e dar mais equilíbrio ou volume visual à parte inferior.**')
