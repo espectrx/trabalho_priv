@@ -627,7 +627,7 @@ def substituir_roupas(image):
         # Mostra imagem e botão de download
         st.image(temp_out_path, caption="Resultado")
         with open(temp_out_path, "rb") as f:
-            st.download_button("Baixar imagem gerada", f, file_name="resultado_vton.png")
+            st.download_button("Baixar imagem gerada", f, file_name="resultado.png")
 
 
 def main():
