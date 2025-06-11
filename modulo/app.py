@@ -14,7 +14,7 @@ import tempfile
 
 # Try to import your custom functions - with error handling
 try:
-    from modulo.processamento import extrair_dados_da_imagem
+    from processamento import extrair_dados_da_imagem
 
     PROCESSAMENTO_AVAILABLE = True
 except ImportError:
@@ -22,7 +22,7 @@ except ImportError:
     PROCESSAMENTO_AVAILABLE = False
 
 try:
-    from modulo.recomendacao import recomendar_roupas
+    from recomendacao import recomendar_roupas
 
     RECOMENDACAO_AVAILABLE = True
 except ImportError:
