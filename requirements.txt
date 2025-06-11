@@ -1,3 +1,4 @@
+google.generativeai
 gradio_client
 matplotlib==3.10.1
 mediapipe==0.10.21
