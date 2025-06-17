@@ -71,420 +71,420 @@ def extrair_dados_da_imagem(imagem,caminho=None):
         largura_quadril = round(np.sqrt(dx_hip ** 2 + dy_hip ** 2), 2)
         medidas['largura_quadril'] = largura_quadril
 
-        # DIFERENÇA OMBRO E QUADRIL
-        ombros = medidas.get('largura_ombros')
-        quadril = medidas.get('largura_quadril')
-        proporcao = medidas.get('proporção')
-        diferenca = abs(ombros - quadril)
+        # # DIFERENÇA OMBRO E QUADRIL
+        # ombros = medidas.get('largura_ombros')
+        # quadril = medidas.get('largura_quadril')
+        # proporcao = medidas.get('proporção')
+        # diferenca = abs(ombros - quadril)
 
-        # TIPO DE CORPO
-        if diferenca < 0.03:
-            if proporcao < 0.9:
-                tipo_corpo = "Ampulheta"
+        # # TIPO DE CORPO
+        # if diferenca < 0.03:
+        #     if proporcao < 0.9:
+        #         tipo_corpo = "Ampulheta"
+        #     else:
+        #         tipo_corpo = "Retângulo"
+        # elif ombros > quadril:
+        #     tipo_corpo = "Triângulo Invertido"
+        # elif quadril > ombros:
+        #     tipo_corpo = "Pêra (Triângulo)"
+        # else:
+        #     tipo_corpo = "Desconhecido"
+
+        # medidas['Tipo de corpo'] = tipo_corpo
+
+        class MultiGeminiBodyTypeClassifier:
+            def __init__(self, gemini_api_keys=None):
+                """
+                Inicializa o classificador com múltiplas chaves Gemini
+    
+                Args:
+                    gemini_api_keys: Lista de chaves da API do Gemini ou chave única
+                """
+    
+                # Configurar múltiplas chaves
+                if gemini_api_keys is None:
+                    # Chaves padrão (substitua pelas suas)
+                    self.api_keys = [
+                        "AIzaSyBsuDaBYYHhNRLIob8U8Zbb1hKMWAuLASE",  # Chave principal
+                        "AIzaSyBujAPcUqckJ3vDceiXp2dcjoKSk5tB2jI",  # Chave backup 1
+                        "AIzaSyBdY1G2LdtQpsw1tAsuyNz5JED5T2gFt5w",  # Chave backup 2
+                        "AIzaSyApCqbHjrkpVMAMz07HxTKS4Hxas0SAONs"  # Chave backup 3
+                    ]
+                elif isinstance(gemini_api_keys, str):
+                    # Apenas uma chave fornecida
+                    self.api_keys = [gemini_api_keys]
+                else:
+                    # Lista de chaves fornecida
+                    self.api_keys = gemini_api_keys
+    
+                # Filtrar chaves válidas (remover placeholders)
+                self.api_keys = [key for key in self.api_keys if not key.startswith("SUA_")]
+    
+                if not self.api_keys:
+                    raise ValueError("Pelo menos uma chave válida do Gemini deve ser fornecida")
+    
+                print(f"🔑 Configuradas {len(self.api_keys)} chaves Gemini")
+    
+                # Status das chaves (para controle de rate limit)
+                self.key_status = {key: {"available": True, "last_error": None, "cooldown_until": 0}
+                                   for key in self.api_keys}
+    
+                # Tipos corporais válidos
+                self.valid_body_types = ['TRIANGULO', 'TRIANGULO_INVERTIDO', 'OVAL', 'RETANGULO']
+    
+            def _get_available_key(self):
+                """
+                Retorna uma chave disponível, priorizando as que não estão em cooldown
+    
+                Returns:
+                    str: Chave API disponível ou None se todas estão indisponíveis
+                """
+                current_time = time.time()
+    
+                # Verificar chaves fora de cooldown
+                available_keys = []
+                for key in self.api_keys:
+                    if (self.key_status[key]["available"] and
+                            current_time > self.key_status[key]["cooldown_until"]):
+                        available_keys.append(key)
+    
+                if available_keys:
+                    # Embaralhar para distribuir carga
+                    return random.choice(available_keys)
+    
+                # Se todas estão em cooldown, usar a que sai primeiro
+                next_available = min(self.api_keys,
+                                     key=lambda k: self.key_status[k]["cooldown_until"])
+    
+                if current_time > self.key_status[next_available]["cooldown_until"]:
+                    return next_available
+    
+                return None
+    
+            def _mark_key_error(self, api_key, error, cooldown_seconds=300):
+                """
+                Marca uma chave como problemática e define cooldown
+    
+                Args:
+                    api_key: Chave com problema
+                    error: Erro ocorrido
+                    cooldown_seconds: Tempo de espera antes de tentar novamente
+                """
+                self.key_status[api_key]["available"] = False
+                self.key_status[api_key]["last_error"] = str(error)
+                self.key_status[api_key]["cooldown_until"] = time.time() + cooldown_seconds
+    
+                print(f"⚠️ Chave temporariamente indisponível: {api_key[:20]}... | Erro: {error}")
+    
+            def _mark_key_success(self, api_key):
+                """
+                Marca uma chave como funcionando corretamente
+    
+                Args:
+                    api_key: Chave que funcionou
+                """
+                self.key_status[api_key]["available"] = True
+                self.key_status[api_key]["last_error"] = None
+                self.key_status[api_key]["cooldown_until"] = 0
+    
+            def classify_with_gemini_multi(self, image_input, max_attempts=None):
+                """
+                Classifica tipo corporal tentando múltiplas chaves Gemini.
+                Aceita tanto um caminho de arquivo (str) quanto bytes da imagem.
+    
+                Args:
+                    image_input: Caminho para a imagem (str) ou bytes da imagem (bytes).
+                    max_attempts: Máximo de tentativas (None = tentar todas as chaves)
+    
+                Returns:
+                    dict: Resultado da classificação com detalhes
+                """
+                print("🎯 Analisando com múltiplas chaves Gemini...")
+    
+                if max_attempts is None:
+                    max_attempts = len(self.api_keys) * 2  # 2 tentativas por chave
+    
+                attempts = 0
+                used_keys = []
+    
+                # Prompt otimizado para análise corporal
+                prompt = """
+                ANÁLISE DETALHADA DE TIPO CORPORAL:
+    
+                Observe CUIDADOSAMENTE esta pessoa e analise as proporções corporais:
+    
+                1. TRIANGULO (Pera):
+                   - Quadris/coxas CLARAMENTE mais largos que ombros
+                   - Cintura definida
+                   - Parte superior menor que inferior
+    
+                2. TRIANGULO_INVERTIDO (Maçã):
+                   - Ombros/busto CLARAMENTE mais largos que quadris
+                   - Torso mais volumoso
+                   - Parte superior maior que inferior
+    
+                3. OVAL:
+                   - Concentração de peso no abdômen/meio do corpo
+                   - Cintura POUCO ou NÃO definida
+                   - Formato arredondado no centro
+    
+                4. RETANGULO:
+                   - Ombros, cintura e quadris com larguras SIMILARES
+                   - Corpo reto/atlético
+                   - Pouca diferença entre medidas
+    
+                INSTRUÇÕES:
+                - Compare VISUALMENTE as larguras
+                - Ignore roupas largas, foque no formato corporal
+                - Seja preciso na identificação
+                - Considere a silhueta geral
+    
+                Responda APENAS: TRIANGULO, TRIANGULO_INVERTIDO, OVAL ou RETANGULO
+                """
+    
+                while attempts < max_attempts:
+                    attempts += 1
+    
+                    # Obter chave disponível
+                    current_key = self._get_available_key()
+    
+                    if not current_key:
+                        print("⏳ Todas as chaves estão em cooldown, aguardando...")
+                        time.sleep(10)
+                        continue
+    
+                    used_keys.append(current_key[:20] + "...")
+    
+                    try:
+                        print(f"🔑 Tentativa {attempts} com chave: {current_key[:20]}...")
+    
+                        # Configurar Gemini com a chave atual
+                        genai.configure(api_key=current_key)
+                        model = genai.GenerativeModel('gemini-1.5-flash')
+    
+                        # --- Lógica de carregamento da imagem melhorada ---
+                        if isinstance(image_input, str):  # Caminho de arquivo
+                            if not os.path.exists(image_input):
+                                raise ValueError(f"Arquivo não encontrado: {image_input}")
+                            image = Image.open(image_input)
+                        elif isinstance(image_input, bytes):  # Bytes da imagem
+                            image = Image.open(io.BytesIO(image_input))
+                        elif hasattr(image_input, 'save'):  # Objeto PIL.Image
+                            image = image_input
+                        else:
+                            raise ValueError(
+                                "Tipo de entrada inválido. Deve ser: caminho (str), bytes, ou PIL.Image")
+                        # --- Fim da lógica de carregamento ---
+    
+                        # Gerar resposta
+                        response = model.generate_content([prompt, image])
+                        result = response.text.strip().upper()
+    
+                        # Normalizar resposta
+                        result = self._normalize_response(result)
+    
+                        if result in self.valid_body_types:
+                            print(f"✅ Sucesso com chave {current_key[:20]}... | Resultado: {result}")
+                            self._mark_key_success(current_key)
+    
+                            return {
+                                'result': result,
+                                'key_used': current_key[:20] + "...",
+                                'attempts': attempts,
+                                'keys_tried': used_keys,
+                                'success': True
+                            }
+                        else:
+                            print(f"⚠️ Resposta inválida: {result}")
+    
+                    except Exception as e:
+                        error_str = str(e).lower()
+    
+                        # Determinar tipo de erro e cooldown apropriado
+                        if "quota" in error_str or "limit" in error_str:
+                            cooldown = 3600  # 1 hora para quota exceeded
+                            print(f"🚫 Quota excedida na chave {current_key[:20]}...")
+                        elif "rate" in error_str:
+                            cooldown = 60  # 1 minuto para rate limit
+                            print(f"⏸️ Rate limit na chave {current_key[:20]}...")
+                        else:
+                            cooldown = 300  # 5 minutos para outros erros
+                            print(f"❌ Erro na chave {current_key[:20]}...: {e}")
+    
+                        self._mark_key_error(current_key, e, cooldown)
+    
+                        # Pequena pausa antes da próxima tentativa
+                        time.sleep(2)
+    
+                print(f"❌ Todas as tentativas falharam após {attempts} tentativas")
+                return {
+                    'result': None,
+                    'key_used': None,
+                    'attempts': attempts,
+                    'keys_tried': used_keys,
+                    'success': False
+                }
+    
+            def _normalize_response(self, response):
+                """
+                Normaliza a resposta removendo acentos e caracteres especiais
+                """
+                # Remover caracteres especiais
+                response = response.replace('Â', '').replace('Ã', '').replace('â', '').replace('ã', '')
+    
+                # Verificar se contém triângulo invertido primeiro (mais específico)
+                if any(pattern in response for pattern in ['TRIANGULO_INVERTIDO', 'TRIÂNGULO_INVERTIDO']):
+                    return 'TRIANGULO_INVERTIDO'
+    
+                # Depois verificar triângulo normal
+                if any(pattern in response for pattern in ['TRIANGULO', 'TRIÂNGULO']) and 'INVERTIDO' not in response:
+                    return 'TRIANGULO'
+    
+                # Verificar outros tipos
+                if 'OVAL' in response:
+                    return 'OVAL'
+                if any(pattern in response for pattern in ['RETANGULO', 'RETÂNGULO']):
+                    return 'RETANGULO'
+    
+                return response
+    
+            def classify_body_type(self, image_input):
+                """
+                Classifica tipo corporal usando múltiplas chaves Gemini.
+                Aceita tanto um caminho de arquivo (str) quanto bytes da imagem.
+    
+                Args:
+                    image_input: Caminho para a imagem (str) ou bytes da imagem (bytes).
+    
+                Returns:
+                    dict: Resultado da classificação
+                """
+                print("=" * 60)
+                print("🎯 CLASSIFICAÇÃO DE TIPO CORPORAL - MULTI GEMINI")
+                print("=" * 60)
+    
+                # Classificar com múltiplas chaves
+                result = self.classify_with_gemini_multi(image_input)
+    
+                if not result['success']:
+                    return {
+                        'result': None,
+                        'method': 'Multi-Gemini',
+                        'confidence': 0,
+                        'details': 'Todas as chaves Gemini falharam',
+                        'attempts': result['attempts'],
+                        'keys_tried': result['keys_tried']
+                    }
+    
+                # Formatar resultado
+                formatted_result = self._format_body_type(result['result'])
+    
+                return {
+                    'result': formatted_result,
+                    'method': f'Multi-Gemini ({result["key_used"]})',
+                    'confidence': 0.9,
+                    'details': {
+                        'raw_result': result['result'],
+                        'attempts': result['attempts'],
+                        'keys_tried': result['keys_tried']
+                    }
+                }
+    
+            def _format_body_type(self, body_type):
+                """
+                Formata o tipo corporal para exibição
+                """
+                body_type_names = {
+                    'TRIANGULO': 'Triângulo',
+                    'TRIANGULO_INVERTIDO': 'Triângulo Invertido',
+                    'OVAL': 'Oval',
+                    'RETANGULO': 'Retângulo (Atlético)'
+                }
+    
+                return body_type_names.get(body_type, body_type)
+    
+            def get_keys_status(self):
+                """
+                Retorna o status atual de todas as chaves
+    
+                Returns:
+                    dict: Status detalhado das chaves
+                """
+                current_time = time.time()
+                status = {}
+    
+                for i, key in enumerate(self.api_keys):
+                    key_info = self.key_status[key]
+                    status[f"Chave {i + 1} ({key[:20]}...)"] = {
+                        'disponível': key_info['available'] and current_time > key_info['cooldown_until'],
+                        'último_erro': key_info['last_error'],
+                        'cooldown_até': time.ctime(key_info['cooldown_until']) if key_info[
+                                                                                      'cooldown_until'] > current_time else 'Nenhum'
+                    }
+    
+                return status
+    
+        # Função simplificada para integração
+        def classify_body_type_multi_gemini(image_input, gemini_api_keys=None):
+            """
+            Função simples para classificar tipo corporal com múltiplas chaves Gemini.
+            Aceita tanto um caminho de arquivo (str) quanto bytes da imagem.
+    
+            Args:
+                image_input: Caminho para a imagem (str) ou bytes da imagem (bytes).
+                gemini_api_keys: Lista de chaves da API do Gemini
+    
+            Returns:
+                str: Tipo corporal formatado
+            """
+            classifier = MultiGeminiBodyTypeClassifier(gemini_api_keys)
+            result = classifier.classify_body_type(image_input)
+    
+            if result['result']:
+                return result['result']
             else:
-                tipo_corpo = "Retângulo"
-        elif ombros > quadril:
-            tipo_corpo = "Triângulo Invertido"
-        elif quadril > ombros:
-            tipo_corpo = "Pêra (Triângulo)"
-        else:
-            tipo_corpo = "Desconhecido"
-
-        medidas['Tipo de corpo'] = tipo_corpo
-
-    #     class MultiGeminiBodyTypeClassifier:
-    #         def __init__(self, gemini_api_keys=None):
-    #             """
-    #             Inicializa o classificador com múltiplas chaves Gemini
-    #
-    #             Args:
-    #                 gemini_api_keys: Lista de chaves da API do Gemini ou chave única
-    #             """
-    #
-    #             # Configurar múltiplas chaves
-    #             if gemini_api_keys is None:
-    #                 # Chaves padrão (substitua pelas suas)
-    #                 self.api_keys = [
-    #                     "AIzaSyBsuDaBYYHhNRLIob8U8Zbb1hKMWAuLASE",  # Chave principal
-    #                     "AIzaSyBujAPcUqckJ3vDceiXp2dcjoKSk5tB2jI",  # Chave backup 1
-    #                     "AIzaSyBdY1G2LdtQpsw1tAsuyNz5JED5T2gFt5w",  # Chave backup 2
-    #                     "AIzaSyApCqbHjrkpVMAMz07HxTKS4Hxas0SAONs"  # Chave backup 3
-    #                 ]
-    #             elif isinstance(gemini_api_keys, str):
-    #                 # Apenas uma chave fornecida
-    #                 self.api_keys = [gemini_api_keys]
-    #             else:
-    #                 # Lista de chaves fornecida
-    #                 self.api_keys = gemini_api_keys
-    #
-    #             # Filtrar chaves válidas (remover placeholders)
-    #             self.api_keys = [key for key in self.api_keys if not key.startswith("SUA_")]
-    #
-    #             if not self.api_keys:
-    #                 raise ValueError("Pelo menos uma chave válida do Gemini deve ser fornecida")
-    #
-    #             print(f"🔑 Configuradas {len(self.api_keys)} chaves Gemini")
-    #
-    #             # Status das chaves (para controle de rate limit)
-    #             self.key_status = {key: {"available": True, "last_error": None, "cooldown_until": 0}
-    #                                for key in self.api_keys}
-    #
-    #             # Tipos corporais válidos
-    #             self.valid_body_types = ['TRIANGULO', 'TRIANGULO_INVERTIDO', 'OVAL', 'RETANGULO']
-    #
-    #         def _get_available_key(self):
-    #             """
-    #             Retorna uma chave disponível, priorizando as que não estão em cooldown
-    #
-    #             Returns:
-    #                 str: Chave API disponível ou None se todas estão indisponíveis
-    #             """
-    #             current_time = time.time()
-    #
-    #             # Verificar chaves fora de cooldown
-    #             available_keys = []
-    #             for key in self.api_keys:
-    #                 if (self.key_status[key]["available"] and
-    #                         current_time > self.key_status[key]["cooldown_until"]):
-    #                     available_keys.append(key)
-    #
-    #             if available_keys:
-    #                 # Embaralhar para distribuir carga
-    #                 return random.choice(available_keys)
-    #
-    #             # Se todas estão em cooldown, usar a que sai primeiro
-    #             next_available = min(self.api_keys,
-    #                                  key=lambda k: self.key_status[k]["cooldown_until"])
-    #
-    #             if current_time > self.key_status[next_available]["cooldown_until"]:
-    #                 return next_available
-    #
-    #             return None
-    #
-    #         def _mark_key_error(self, api_key, error, cooldown_seconds=300):
-    #             """
-    #             Marca uma chave como problemática e define cooldown
-    #
-    #             Args:
-    #                 api_key: Chave com problema
-    #                 error: Erro ocorrido
-    #                 cooldown_seconds: Tempo de espera antes de tentar novamente
-    #             """
-    #             self.key_status[api_key]["available"] = False
-    #             self.key_status[api_key]["last_error"] = str(error)
-    #             self.key_status[api_key]["cooldown_until"] = time.time() + cooldown_seconds
-    #
-    #             print(f"⚠️ Chave temporariamente indisponível: {api_key[:20]}... | Erro: {error}")
-    #
-    #         def _mark_key_success(self, api_key):
-    #             """
-    #             Marca uma chave como funcionando corretamente
-    #
-    #             Args:
-    #                 api_key: Chave que funcionou
-    #             """
-    #             self.key_status[api_key]["available"] = True
-    #             self.key_status[api_key]["last_error"] = None
-    #             self.key_status[api_key]["cooldown_until"] = 0
-    #
-    #         def classify_with_gemini_multi(self, image_input, max_attempts=None):
-    #             """
-    #             Classifica tipo corporal tentando múltiplas chaves Gemini.
-    #             Aceita tanto um caminho de arquivo (str) quanto bytes da imagem.
-    #
-    #             Args:
-    #                 image_input: Caminho para a imagem (str) ou bytes da imagem (bytes).
-    #                 max_attempts: Máximo de tentativas (None = tentar todas as chaves)
-    #
-    #             Returns:
-    #                 dict: Resultado da classificação com detalhes
-    #             """
-    #             print("🎯 Analisando com múltiplas chaves Gemini...")
-    #
-    #             if max_attempts is None:
-    #                 max_attempts = len(self.api_keys) * 2  # 2 tentativas por chave
-    #
-    #             attempts = 0
-    #             used_keys = []
-    #
-    #             # Prompt otimizado para análise corporal
-    #             prompt = """
-    #             ANÁLISE DETALHADA DE TIPO CORPORAL:
-    #
-    #             Observe CUIDADOSAMENTE esta pessoa e analise as proporções corporais:
-    #
-    #             1. TRIANGULO (Pera):
-    #                - Quadris/coxas CLARAMENTE mais largos que ombros
-    #                - Cintura definida
-    #                - Parte superior menor que inferior
-    #
-    #             2. TRIANGULO_INVERTIDO (Maçã):
-    #                - Ombros/busto CLARAMENTE mais largos que quadris
-    #                - Torso mais volumoso
-    #                - Parte superior maior que inferior
-    #
-    #             3. OVAL:
-    #                - Concentração de peso no abdômen/meio do corpo
-    #                - Cintura POUCO ou NÃO definida
-    #                - Formato arredondado no centro
-    #
-    #             4. RETANGULO:
-    #                - Ombros, cintura e quadris com larguras SIMILARES
-    #                - Corpo reto/atlético
-    #                - Pouca diferença entre medidas
-    #
-    #             INSTRUÇÕES:
-    #             - Compare VISUALMENTE as larguras
-    #             - Ignore roupas largas, foque no formato corporal
-    #             - Seja preciso na identificação
-    #             - Considere a silhueta geral
-    #
-    #             Responda APENAS: TRIANGULO, TRIANGULO_INVERTIDO, OVAL ou RETANGULO
-    #             """
-    #
-    #             while attempts < max_attempts:
-    #                 attempts += 1
-    #
-    #                 # Obter chave disponível
-    #                 current_key = self._get_available_key()
-    #
-    #                 if not current_key:
-    #                     print("⏳ Todas as chaves estão em cooldown, aguardando...")
-    #                     time.sleep(10)
-    #                     continue
-    #
-    #                 used_keys.append(current_key[:20] + "...")
-    #
-    #                 try:
-    #                     print(f"🔑 Tentativa {attempts} com chave: {current_key[:20]}...")
-    #
-    #                     # Configurar Gemini com a chave atual
-    #                     genai.configure(api_key=current_key)
-    #                     model = genai.GenerativeModel('gemini-1.5-flash')
-    #
-    #                     # --- Lógica de carregamento da imagem melhorada ---
-    #                     if isinstance(image_input, str):  # Caminho de arquivo
-    #                         if not os.path.exists(image_input):
-    #                             raise ValueError(f"Arquivo não encontrado: {image_input}")
-    #                         image = Image.open(image_input)
-    #                     elif isinstance(image_input, bytes):  # Bytes da imagem
-    #                         image = Image.open(io.BytesIO(image_input))
-    #                     elif hasattr(image_input, 'save'):  # Objeto PIL.Image
-    #                         image = image_input
-    #                     else:
-    #                         raise ValueError(
-    #                             "Tipo de entrada inválido. Deve ser: caminho (str), bytes, ou PIL.Image")
-    #                     # --- Fim da lógica de carregamento ---
-    #
-    #                     # Gerar resposta
-    #                     response = model.generate_content([prompt, image])
-    #                     result = response.text.strip().upper()
-    #
-    #                     # Normalizar resposta
-    #                     result = self._normalize_response(result)
-    #
-    #                     if result in self.valid_body_types:
-    #                         print(f"✅ Sucesso com chave {current_key[:20]}... | Resultado: {result}")
-    #                         self._mark_key_success(current_key)
-    #
-    #                         return {
-    #                             'result': result,
-    #                             'key_used': current_key[:20] + "...",
-    #                             'attempts': attempts,
-    #                             'keys_tried': used_keys,
-    #                             'success': True
-    #                         }
-    #                     else:
-    #                         print(f"⚠️ Resposta inválida: {result}")
-    #
-    #                 except Exception as e:
-    #                     error_str = str(e).lower()
-    #
-    #                     # Determinar tipo de erro e cooldown apropriado
-    #                     if "quota" in error_str or "limit" in error_str:
-    #                         cooldown = 3600  # 1 hora para quota exceeded
-    #                         print(f"🚫 Quota excedida na chave {current_key[:20]}...")
-    #                     elif "rate" in error_str:
-    #                         cooldown = 60  # 1 minuto para rate limit
-    #                         print(f"⏸️ Rate limit na chave {current_key[:20]}...")
-    #                     else:
-    #                         cooldown = 300  # 5 minutos para outros erros
-    #                         print(f"❌ Erro na chave {current_key[:20]}...: {e}")
-    #
-    #                     self._mark_key_error(current_key, e, cooldown)
-    #
-    #                     # Pequena pausa antes da próxima tentativa
-    #                     time.sleep(2)
-    #
-    #             print(f"❌ Todas as tentativas falharam após {attempts} tentativas")
-    #             return {
-    #                 'result': None,
-    #                 'key_used': None,
-    #                 'attempts': attempts,
-    #                 'keys_tried': used_keys,
-    #                 'success': False
-    #             }
-    #
-    #         def _normalize_response(self, response):
-    #             """
-    #             Normaliza a resposta removendo acentos e caracteres especiais
-    #             """
-    #             # Remover caracteres especiais
-    #             response = response.replace('Â', '').replace('Ã', '').replace('â', '').replace('ã', '')
-    #
-    #             # Verificar se contém triângulo invertido primeiro (mais específico)
-    #             if any(pattern in response for pattern in ['TRIANGULO_INVERTIDO', 'TRIÂNGULO_INVERTIDO']):
-    #                 return 'TRIANGULO_INVERTIDO'
-    #
-    #             # Depois verificar triângulo normal
-    #             if any(pattern in response for pattern in ['TRIANGULO', 'TRIÂNGULO']) and 'INVERTIDO' not in response:
-    #                 return 'TRIANGULO'
-    #
-    #             # Verificar outros tipos
-    #             if 'OVAL' in response:
-    #                 return 'OVAL'
-    #             if any(pattern in response for pattern in ['RETANGULO', 'RETÂNGULO']):
-    #                 return 'RETANGULO'
-    #
-    #             return response
-    #
-    #         def classify_body_type(self, image_input):
-    #             """
-    #             Classifica tipo corporal usando múltiplas chaves Gemini.
-    #             Aceita tanto um caminho de arquivo (str) quanto bytes da imagem.
-    #
-    #             Args:
-    #                 image_input: Caminho para a imagem (str) ou bytes da imagem (bytes).
-    #
-    #             Returns:
-    #                 dict: Resultado da classificação
-    #             """
-    #             print("=" * 60)
-    #             print("🎯 CLASSIFICAÇÃO DE TIPO CORPORAL - MULTI GEMINI")
-    #             print("=" * 60)
-    #
-    #             # Classificar com múltiplas chaves
-    #             result = self.classify_with_gemini_multi(image_input)
-    #
-    #             if not result['success']:
-    #                 return {
-    #                     'result': None,
-    #                     'method': 'Multi-Gemini',
-    #                     'confidence': 0,
-    #                     'details': 'Todas as chaves Gemini falharam',
-    #                     'attempts': result['attempts'],
-    #                     'keys_tried': result['keys_tried']
-    #                 }
-    #
-    #             # Formatar resultado
-    #             formatted_result = self._format_body_type(result['result'])
-    #
-    #             return {
-    #                 'result': formatted_result,
-    #                 'method': f'Multi-Gemini ({result["key_used"]})',
-    #                 'confidence': 0.9,
-    #                 'details': {
-    #                     'raw_result': result['result'],
-    #                     'attempts': result['attempts'],
-    #                     'keys_tried': result['keys_tried']
-    #                 }
-    #             }
-    #
-    #         def _format_body_type(self, body_type):
-    #             """
-    #             Formata o tipo corporal para exibição
-    #             """
-    #             body_type_names = {
-    #                 'TRIANGULO': 'Triângulo',
-    #                 'TRIANGULO_INVERTIDO': 'Triângulo Invertido',
-    #                 'OVAL': 'Oval',
-    #                 'RETANGULO': 'Retângulo (Atlético)'
-    #             }
-    #
-    #             return body_type_names.get(body_type, body_type)
-    #
-    #         def get_keys_status(self):
-    #             """
-    #             Retorna o status atual de todas as chaves
-    #
-    #             Returns:
-    #                 dict: Status detalhado das chaves
-    #             """
-    #             current_time = time.time()
-    #             status = {}
-    #
-    #             for i, key in enumerate(self.api_keys):
-    #                 key_info = self.key_status[key]
-    #                 status[f"Chave {i + 1} ({key[:20]}...)"] = {
-    #                     'disponível': key_info['available'] and current_time > key_info['cooldown_until'],
-    #                     'último_erro': key_info['last_error'],
-    #                     'cooldown_até': time.ctime(key_info['cooldown_until']) if key_info[
-    #                                                                                   'cooldown_until'] > current_time else 'Nenhum'
-    #                 }
-    #
-    #             return status
-    #
-    #     # Função simplificada para integração
-    #     def classify_body_type_multi_gemini(image_input, gemini_api_keys=None):
-    #         """
-    #         Função simples para classificar tipo corporal com múltiplas chaves Gemini.
-    #         Aceita tanto um caminho de arquivo (str) quanto bytes da imagem.
-    #
-    #         Args:
-    #             image_input: Caminho para a imagem (str) ou bytes da imagem (bytes).
-    #             gemini_api_keys: Lista de chaves da API do Gemini
-    #
-    #         Returns:
-    #             str: Tipo corporal formatado
-    #         """
-    #         classifier = MultiGeminiBodyTypeClassifier(gemini_api_keys)
-    #         result = classifier.classify_body_type(image_input)
-    #
-    #         if result['result']:
-    #             return result['result']
-    #         else:
-    #             return "Não foi possível classificar o tipo corporal"
-    #
-    # # Exemplo de uso
-    # # Suas múltiplas chaves Gemini
-    # GEMINI_KEYS = [
-    #     "AIzaSyBsuDaBYYHhNRLIob8U8Zbb1hKMWAuLASE",  # Chave principal
-    #     "AIzaSyBujAPcUqckJ3vDceiXp2dcjoKSk5tB2jI",  # Chave backup 1
-    #     "AIzaSyBdY1G2LdtQpsw1tAsuyNz5JED5T2gFt5w",  # Chave backup 2
-    #     "AIzaSyApCqbHjrkpVMAMz07HxTKS4Hxas0SAONs"  # Chave backup 3
-    # ]
-    #
-    # # Caminho da imagem
-    # image_path = caminho
-    #
-    # try:
-    #     print("🚀 CLASSIFICANDO COM MÚLTIPLAS CHAVES GEMINI")
-    #     print("=" * 60)
-    #
-    #     classifier = MultiGeminiBodyTypeClassifier(GEMINI_KEYS)
-    #     result = classifier.classify_body_type(image_path)
-    #
-    #     # Mostrar status das chaves
-    #     print("\n📊 Status das chaves:")
-    #     for key, status in classifier.get_keys_status().items():
-    #         print(f"  {key}: {'✅' if status['disponível'] else '❌'}")
-    #
-    #     print(f"\n✅ Resultado: {result['result']}")
-    #     print(f"🔧 Método: {result['method']}")
-    #     print(f"📊 Confiança: {result['confidence']}")
-    #     print(f"🔄 Tentativas: {result['details']['attempts']}")
-    #     medidas['Tipo de corpo'] = result['result']
-    #
-    #     # Usando função simples
-    #     # print("\n" + "=" * 60)
-    #     # print("🎯 USANDO FUNÇÃO SIMPLES")
-    #     # simple_result = classify_body_type_multi_gemini(image_path, GEMINI_KEYS)
-    #     # print(f"✅ Resultado simples: {simple_result}")
-    #
-    # except Exception as e:
-    #     print(f"❌ Erro na execução: {e}")
-    #     import traceback
-    #     traceback.print_exc()
+                return "Não foi possível classificar o tipo corporal"
+    
+    # Exemplo de uso
+    # Suas múltiplas chaves Gemini
+    GEMINI_KEYS = [
+        "AIzaSyBsuDaBYYHhNRLIob8U8Zbb1hKMWAuLASE",  # Chave principal
+        "AIzaSyBujAPcUqckJ3vDceiXp2dcjoKSk5tB2jI",  # Chave backup 1
+        "AIzaSyBdY1G2LdtQpsw1tAsuyNz5JED5T2gFt5w",  # Chave backup 2
+        "AIzaSyApCqbHjrkpVMAMz07HxTKS4Hxas0SAONs"  # Chave backup 3
+    ]
+    
+    # Caminho da imagem
+    image_path = caminho
+    
+    try:
+        print("🚀 CLASSIFICANDO COM MÚLTIPLAS CHAVES GEMINI")
+        print("=" * 60)
+    
+        classifier = MultiGeminiBodyTypeClassifier(GEMINI_KEYS)
+        result = classifier.classify_body_type(image_path)
+    
+        # Mostrar status das chaves
+        print("\n📊 Status das chaves:")
+        for key, status in classifier.get_keys_status().items():
+            print(f"  {key}: {'✅' if status['disponível'] else '❌'}")
+    
+        print(f"\n✅ Resultado: {result['result']}")
+        print(f"🔧 Método: {result['method']}")
+        print(f"📊 Confiança: {result['confidence']}")
+        print(f"🔄 Tentativas: {result['details']['attempts']}")
+        medidas['Tipo de corpo'] = result['result']
+    
+        # Usando função simples
+        # print("\n" + "=" * 60)
+        # print("🎯 USANDO FUNÇÃO SIMPLES")
+        # simple_result = classify_body_type_multi_gemini(image_path, GEMINI_KEYS)
+        # print(f"✅ Resultado simples: {simple_result}")
+    
+    except Exception as e:
+        print(f"❌ Erro na execução: {e}")
+        import traceback
+        traceback.print_exc()
 
 
     #cv2.imshow("Imagem de Entrada", imagem)
