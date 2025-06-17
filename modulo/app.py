@@ -649,6 +649,8 @@ def main():
     st.image(Image.open(os.path.join(diretorio_slide, "..", "data", "slides", "slide2.png")), use_container_width=True)
     st.image(Image.open(os.path.join(diretorio_slide, "..", "data", "slides", "slide3.png")), use_container_width=True)
     st.image(Image.open(os.path.join(diretorio_slide, "..", "data", "slides", "slide4.png")), use_container_width=True)
+    st.image(Image.open(os.path.join(diretorio_slide, "..", "data", "slides", "slide5.png")), use_container_width=True)
+    st.image(Image.open(os.path.join(diretorio_slide, "..", "data", "slides", "slide6.png")), use_container_width=True)
 
     st.markdown('<h1 class="main-header">🎨 Análise de Coloração Pessoal</h1>', unsafe_allow_html=True)
     st.markdown("**Upload uma foto para análise completa das suas características de cor e estilo!**")
@@ -1093,6 +1095,8 @@ def main():
             # st.latex(r"E = mc^2")
 
         substituir_roupas(image)
+    
+        st.image(Image.open(os.path.join(diretorio_slide, "..", "data", "slides", "slide7.png")), use_container_width=True)
 
         # Complete dictionary (expandable)
         with st.expander("📋 Ver Dicionário Completo de Análise"):
