@@ -481,10 +481,10 @@ def extrair_dados_da_imagem(imagem,caminho=None):
     #     # simple_result = classify_body_type_multi_gemini(image_path, GEMINI_KEYS)
     #     # print(f"✅ Resultado simples: {simple_result}")
     
-    except Exception as e:
-        print(f"❌ Erro na execução: {e}")
-        import traceback
-        traceback.print_exc()
+    # except Exception as e:
+    #     print(f"❌ Erro na execução: {e}")
+    #     import traceback
+    #     traceback.print_exc()
 
 
     #cv2.imshow("Imagem de Entrada", imagem)
