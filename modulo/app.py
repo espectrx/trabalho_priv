@@ -640,8 +640,8 @@ def substituir_roupas(image):
             st.error(f"Ocorreu um erro ao processar a imagem: {e}")
 
 def main():
-    # Header
-    st.markdown('<h1 class="main-header">VesteAI</h1>', unsafe_allow_html=True)
+    # # Header
+    # st.markdown('<h1 class="main-header">VesteAI</h1>', unsafe_allow_html=True)
 
     # Exibe os slides no app
     diretorio_slide = os.path.dirname(os.path.abspath(__file__))
