@@ -639,6 +639,60 @@ def substituir_roupas(image):
         except Exception as e:
             st.error(f"Ocorreu um erro ao processar a imagem: {e}")
 
+def substituir_roupas_2(image):
+    # Upload da roupa
+    uploaded_roupa_img = st.file_uploader("Arraste a imagem da roupa ou envie alguma de sua escolha:", type=["jpg", "png", "jpeg"])
+
+    if image and uploaded_roupa_img:
+        st.write("Preparando imagens para envio à API...")
+
+        try:
+            # Salva imagem do modelo (pessoa)
+            temp_model_path = os.path.join(tempfile.gettempdir(), "model_image.jpg")
+            image.save(temp_model_path)
+
+            # Salva imagem da roupa
+            temp_roupa_path = os.path.join(tempfile.gettempdir(), "roupa_image.jpg")
+            with open(temp_roupa_path, "wb") as f:
+                f.write(uploaded_roupa_img.read())
+
+            # Monta o payload
+            with open(temp_model_path, "rb") as model_file, open(temp_roupa_path, "rb") as roupa_file:
+                files = {
+                    "image": model_file,
+                    "cloth": roupa_file
+                }
+
+                headers = {
+                    "x-rapidapi-key": "cbdf7f1abcmshbdd93e49bcc8466p132ccdjsnfe426af1b090",
+                    "x-rapidapi-host": "try-on-diffusion.p.rapidapi.com"
+                }
+
+                with st.spinner("Processando imagem..."):
+                    response = requests.post(
+                        "https://try-on-diffusion.p.rapidapi.com/try-on-file",
+                        files=files,
+                        headers=headers
+                    )
+
+            if response.status_code != 200:
+                st.error(f"Erro da API: {response.status_code} - {response.text}")
+                return
+
+            # A resposta da API vem com a URL da imagem resultante
+            result_json = response.json()
+            output_url = result_json.get("output_url")
+
+            if output_url:
+                st.image(output_url, caption="Resultado")
+                st.markdown(f"[Clique aqui para baixar a imagem gerada]({output_url})", unsafe_allow_html=True)
+            else:
+                st.error("A resposta não contém uma imagem válida.")
+
+        except Exception as e:
+            st.error(f"Ocorreu um erro: {e}")
+
+
 def main():
     # # Header
     # st.markdown('<h1 class="main-header">VesteAI</h1>', unsafe_allow_html=True)
@@ -1094,7 +1148,7 @@ def main():
             # st.code("print('Olá mundo')", language="python")
             # st.latex(r"E = mc^2")
 
-        substituir_roupas(image)
+        substituir_roupas_2(image)
     
         st.image(Image.open(os.path.join(diretorio_slide, "..", "data", "slides", "slide7.png")), use_container_width=True)
 
