@@ -929,7 +929,7 @@ def main():
                             - Calças sem volume na região do quadril
                             """)
             
-            exibir_imagens_roupas(os.path.join(diretorio_roupas, "..", "data", "imagens_corpos", "triângulo invertido"))
+            exibir_imagens_roupas(os.path.join(diretorio_roupas, "..", "data", "imagens_corpos", "triângulo invertido1"))
 
         elif st.session_state.medidas['Tipo de corpo'] == 'Triângulo':
             st.markdown('**Suavizar os ombros e dar mais equilíbrio ou volume visual à parte inferior.**')
