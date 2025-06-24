@@ -12,6 +12,7 @@ from gradio_client import Client, file
 import shutil
 import tempfile
 import sys, os
+import requests
 
 sys.path.append(os.path.dirname(__file__))
 # from processamento import extrair_dados_da_imagem
