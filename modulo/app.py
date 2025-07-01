@@ -11,7 +11,7 @@ import glob
 from gradio_client import Client, file
 import shutil
 import tempfile
-import sys, os
+import sys
 import requests
 
 sys.path.append(os.path.dirname(__file__))
@@ -780,8 +780,6 @@ def main():
                     st.session_state.medidas = medidas
                     st.session_state.visualizacoes = visualizacoes
                     st.session_state.analysis_complete = True
-
-                    face_landmarks = None
 
                 except Exception as e:
                     st.error(f"Erro na análise: {str(e)}")
