@@ -781,6 +781,7 @@ def main():
                     st.session_state.visualizacoes = visualizacoes
                     st.session_state.analysis_complete = True
 
+                    face_landmarks = None
 
                 except Exception as e:
                     st.error(f"Erro na análise: {str(e)}")
