@@ -741,7 +741,7 @@ def main():
 
     uploaded_file = st.file_uploader(
         "Escolha uma imagem",
-        type=['png', 'jpg', 'jpeg'],
+        type=['png', 'jpg', 'jpeg', 'heic', 'bmp', 'tiff', 'gif', 'webp'],        
         help="Faça upload de uma foto com boa iluminação"
     )
 
@@ -781,6 +781,8 @@ def main():
                     st.session_state.visualizacoes = visualizacoes
                     st.session_state.analysis_complete = True
 
+                    face_landmarks = None
+                
                 except Exception as e:
                     st.error(f"Erro na análise: {str(e)}")
                     st.code(traceback.format_exc())
