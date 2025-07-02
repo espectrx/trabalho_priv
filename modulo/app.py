@@ -741,7 +741,7 @@ def main():
 
     uploaded_file = st.file_uploader(
         "Escolha uma imagem",
-        type=['png', 'jpg', 'jpeg', 'heic', 'bmp', 'tiff', 'gif', 'webp'],        
+        type=['png', 'jpg', 'jpeg', 'webp'],        
         help="Faça upload de uma foto com boa iluminação"
     )
 
