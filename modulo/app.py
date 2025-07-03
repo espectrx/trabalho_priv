@@ -589,7 +589,7 @@ def substituir_roupas(image):
     client = Client("yisol/IDM-VTON")
 
     # Upload da roupa principal (garm_img)
-    uploaded_roupa_img = st.file_uploader("Arraste a imagem da roupa ou envie alguma de sua escolha:", type=["jpg", "png", "jpeg"])
+    uploaded_roupa_img = st.file_uploader("Arraste a imagem da roupa ou envie alguma de sua escolha:", type=["jpg", "png", "jpeg", "webp"])
 
     if image and uploaded_roupa_img:
         st.write("Preparando imagens para o modelo...")
@@ -642,7 +642,7 @@ def substituir_roupas(image):
 
 def substituir_roupas_2(image):
     # Upload da roupa
-    uploaded_roupa_img = st.file_uploader("Arraste a imagem da roupa ou envie alguma de sua escolha:", type=["jpg", "png", "jpeg"])
+    uploaded_roupa_img = st.file_uploader("Arraste a imagem da roupa ou envie alguma de sua escolha:", type=["jpg", "png", "jpeg", "webp"])
 
     if image and uploaded_roupa_img:
         st.write("Preparando imagens para envio à API...")
@@ -931,7 +931,7 @@ def main():
                             """)
             
             #exibir_imagens_roupas(os.path.join(diretorio_roupas, "..", "data", "imagens_corpos", "triângulo invertido1"))
-            exibir_imagens_roupas(os.path.join(diretorio_roupas, "..", "data", "imagens_roupas"))
+            exibir_imagens_roupas(os.path.join(diretorio_roupas, "..", "data", "imagens_roupas1"))
 
         elif st.session_state.medidas['Tipo de corpo'] == 'Triângulo':
             st.markdown('**Suavizar os ombros e dar mais equilíbrio ou volume visual à parte inferior.**')
