@@ -738,7 +738,11 @@ def substituir_roupas_2(image):
         # Salva imagem do modelo (pessoa)
         temp_model_path = os.path.join(temp_dir, f"model_image_{int(time.time())}.jpg")
         try:
+            # Redimensiona a imagem se necessário (algumas APIs têm limites)
+            if image.size[0] > 1024 or image.size[1] > 1024:
+                image.thumbnail((1024, 1024), Image.Resampling.LANCZOS)
             image.save(temp_model_path, format='JPEG', quality=95)
+            st.info(f"Imagem do modelo salva: {image.size} pixels")
         except Exception as e:
             st.error(f"Erro ao salvar imagem do modelo: {str(e)}")
             return
@@ -759,8 +763,22 @@ def substituir_roupas_2(image):
                 st.error("Arquivo da roupa está vazio ou corrompido.")
                 return
             
-            with open(temp_roupa_path, "wb") as f:
-                f.write(roupa_bytes)
+            # Processa a imagem da roupa para garantir formato correto
+            from PIL import Image
+            import io
+            
+            roupa_image = Image.open(io.BytesIO(roupa_bytes))
+            # Redimensiona se necessário
+            if roupa_image.size[0] > 1024 or roupa_image.size[1] > 1024:
+                roupa_image.thumbnail((1024, 1024), Image.Resampling.LANCZOS)
+            
+            # Converte para RGB se necessário
+            if roupa_image.mode != 'RGB':
+                roupa_image = roupa_image.convert('RGB')
+            
+            roupa_image.save(temp_roupa_path, format='JPEG', quality=95)
+            st.info(f"Imagem da roupa salva: {roupa_image.size} pixels")
+            
         except Exception as e:
             st.error(f"Erro ao salvar imagem da roupa: {str(e)}")
             return
@@ -775,6 +793,18 @@ def substituir_roupas_2(image):
             "x-rapidapi-key": "cbdf7f1abcmshbdd93e49bcc8466p132ccdjsnfe426af1b090",
             "x-rapidapi-host": "try-on-diffusion.p.rapidapi.com"
         }
+        
+        # Debug: Mostra informações das imagens antes do envio
+        st.info("Enviando para API...")
+        st.info(f"Modelo: {os.path.getsize(temp_model_path)} bytes")
+        st.info(f"Roupa: {os.path.getsize(temp_roupa_path)} bytes")
+        
+        # Mostra preview das imagens que serão enviadas
+        col1, col2 = st.columns(2)
+        with col1:
+            st.image(temp_model_path, caption="Modelo (enviado)", width=200)
+        with col2:
+            st.image(temp_roupa_path, caption="Roupa (enviada)", width=200)
         
         # Faz a requisição para a API
         with st.spinner("Processando imagem..."):
