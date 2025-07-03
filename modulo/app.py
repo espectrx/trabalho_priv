@@ -804,39 +804,80 @@ def substituir_roupas_2(image):
         
         # Verifica o status da resposta
         if response.status_code == 200:
-            # Tenta fazer parse do JSON
-            try:
-                result_json = response.json()
-            except ValueError as e:
-                st.error(f"Erro ao decodificar resposta JSON: {str(e)}")
-                st.error(f"Resposta recebida: {response.text[:500]}...")
-                return
+            # Verifica o tipo de conteúdo da resposta
+            content_type = response.headers.get('content-type', '').lower()
             
-            # Verifica se a resposta contém o URL da imagem
-            output_url = result_json.get("output_url")
-            if output_url:
+            if 'application/json' in content_type:
+                # Resposta é JSON com URL da imagem
                 try:
-                    # Verifica se a URL é válida
-                    url_response = requests.head(output_url, timeout=10)
-                    if url_response.status_code == 200:
-                        st.success("Imagem processada com sucesso!")
-                        st.image(output_url, caption="Resultado")
-                        st.markdown(
-                            f"[Clique aqui para baixar a imagem gerada]({output_url})", 
-                            unsafe_allow_html=True
-                        )
+                    result_json = response.json()
+                    output_url = result_json.get("output_url")
+                    if output_url:
+                        try:
+                            # Verifica se a URL é válida
+                            url_response = requests.head(output_url, timeout=10)
+                            if url_response.status_code == 200:
+                                st.success("Imagem processada com sucesso!")
+                                st.image(output_url, caption="Resultado")
+                                st.markdown(
+                                    f"[Clique aqui para baixar a imagem gerada]({output_url})", 
+                                    unsafe_allow_html=True
+                                )
+                            else:
+                                st.error("URL da imagem gerada não está acessível.")
+                        except Exception as e:
+                            st.warning(f"Não foi possível verificar a URL, mas exibindo resultado: {str(e)}")
+                            st.image(output_url, caption="Resultado")
+                            st.markdown(
+                                f"[Clique aqui para baixar a imagem gerada]({output_url})", 
+                                unsafe_allow_html=True
+                            )
                     else:
-                        st.error("URL da imagem gerada não está acessível.")
+                        st.error("A resposta da API não contém uma URL válida para a imagem.")
+                        st.error(f"Resposta recebida: {result_json}")
+                except ValueError as e:
+                    st.error(f"Erro ao decodificar resposta JSON: {str(e)}")
+                    return
+            
+            elif any(img_type in content_type for img_type in ['image/jpeg', 'image/png', 'image/webp', 'image/']):
+                # Resposta é uma imagem diretamente
+                try:
+                    # Salva a imagem recebida
+                    result_image_path = os.path.join(temp_dir, f"resultado_{int(time.time())}.jpg")
+                    with open(result_image_path, 'wb') as f:
+                        f.write(response.content)
+                    
+                    # Verifica se o arquivo foi salvo corretamente
+                    if os.path.exists(result_image_path) and os.path.getsize(result_image_path) > 0:
+                        st.success("Imagem processada com sucesso!")
+                        st.image(result_image_path, caption="Resultado")
+                        
+                        # Oferece download da imagem
+                        with open(result_image_path, 'rb') as f:
+                            st.download_button(
+                                label="Baixar imagem gerada",
+                                data=f.read(),
+                                file_name=f"resultado_try_on_{int(time.time())}.jpg",
+                                mime="image/jpeg"
+                            )
+                        
+                        # Limpa o arquivo de resultado
+                        try:
+                            os.remove(result_image_path)
+                        except:
+                            pass
+                    else:
+                        st.error("Falha ao salvar imagem resultado.")
+                        
                 except Exception as e:
-                    st.warning(f"Não foi possível verificar a URL, mas exibindo resultado: {str(e)}")
-                    st.image(output_url, caption="Resultado")
-                    st.markdown(
-                        f"[Clique aqui para baixar a imagem gerada]({output_url})", 
-                        unsafe_allow_html=True
-                    )
+                    st.error(f"Erro ao processar imagem resultado: {str(e)}")
+                    return
+            
             else:
-                st.error("A resposta da API não contém uma URL válida para a imagem.")
-                st.error(f"Resposta recebida: {result_json}")
+                # Tipo de conteúdo desconhecido
+                st.error(f"Tipo de resposta inesperado: {content_type}")
+                st.error(f"Primeiros 200 caracteres da resposta: {str(response.content[:200])}")
+                return
         
         elif response.status_code == 400:
             st.error("Erro 400: Dados inválidos enviados para a API. Verifique as imagens.")
