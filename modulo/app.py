@@ -1152,10 +1152,12 @@ def main():
         substituir_roupas_2(image)
     
         st.image(Image.open(os.path.join(diretorio_slide, "..", "data", "slides", "slide7.png")), use_container_width=True)
+        st.image(Image.open(os.path.join(diretorio_slide, "..", "data", "slides", "slide8.png")), use_container_width=True)
 
-        # Complete dictionary (expandable)
-        with st.expander("📋 Ver Dicionário Completo de Análise"):
-            st.json(st.session_state.medidas)
+
+        # # Complete dictionary (expandable)
+        # with st.expander("📋 Ver Dicionário Completo de Análise"):
+        #     st.json(st.session_state.medidas)
 
 if __name__ == "__main__":
     main()
