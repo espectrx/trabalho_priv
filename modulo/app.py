@@ -640,59 +640,232 @@ def substituir_roupas(image):
         except Exception as e:
             st.error(f"Ocorreu um erro ao processar a imagem: {e}")
 
+# def substituir_roupas_2(image):
+#     # Upload da roupa
+#     uploaded_roupa_img = st.file_uploader("Arraste a imagem da roupa ou envie alguma de sua escolha:", type=["jpg", "png", "jpeg", "webp"])
+
+#     if image and uploaded_roupa_img:
+#         st.write("Preparando imagens para envio à API...")
+
+#         try:
+#             # Salva imagem do modelo (pessoa)
+#             temp_model_path = os.path.join(tempfile.gettempdir(), "model_image.jpg")
+#             image.save(temp_model_path)
+
+#             # Salva imagem da roupa
+#             temp_roupa_path = os.path.join(tempfile.gettempdir(), "roupa_image.jpg")
+#             with open(temp_roupa_path, "wb") as f:
+#                 f.write(uploaded_roupa_img.read())
+
+#             # Monta o payload
+#             with open(temp_model_path, "rb") as model_file, open(temp_roupa_path, "rb") as roupa_file:
+#                 files = {
+#                     "image": model_file,
+#                     "cloth": roupa_file
+#                 }
+
+#                 headers = {
+#                     "x-rapidapi-key": "cbdf7f1abcmshbdd93e49bcc8466p132ccdjsnfe426af1b090",
+#                     "x-rapidapi-host": "try-on-diffusion.p.rapidapi.com"
+#                 }
+
+#                 with st.spinner("Processando imagem..."):
+#                     response = requests.post(
+#                         "https://try-on-diffusion.p.rapidapi.com/try-on-file",
+#                         files=files,
+#                         headers=headers
+#                     )
+
+#             if response.status_code != 200:
+#                 st.error(f"Erro da API: {response.status_code} - {response.text}")
+#                 return
+
+#             # A resposta da API vem com a URL da imagem resultante
+#             result_json = response.json()
+#             output_url = result_json.get("output_url")
+
+#             if output_url:
+#                 st.image(output_url, caption="Resultado")
+#                 st.markdown(f"[Clique aqui para baixar a imagem gerada]({output_url})", unsafe_allow_html=True)
+#             else:
+#                 st.error("A resposta não contém uma imagem válida.")
+
+#         except Exception as e:
+#             st.error(f"Ocorreu um erro: {e}")
+
 def substituir_roupas_2(image):
+    """
+    Função para substituir roupas em uma imagem usando API de try-on
+    
+    Args:
+        image: Imagem PIL da pessoa/modelo
+    """
     # Upload da roupa
-    uploaded_roupa_img = st.file_uploader("Arraste a imagem da roupa ou envie alguma de sua escolha:", type=["jpg", "png", "jpeg", "webp"])
-
-    if image and uploaded_roupa_img:
-        st.write("Preparando imagens para envio à API...")
-
+    uploaded_roupa_img = st.file_uploader(
+        "Arraste a imagem da roupa ou envie alguma de sua escolha:", 
+        type=["jpg", "png", "jpeg", "webp"]
+    )
+    
+    if not image:
+        st.warning("Por favor, forneça uma imagem do modelo.")
+        return
+    
+    if not uploaded_roupa_img:
+        st.info("Aguardando upload da imagem da roupa...")
+        return
+    
+    st.write("Preparando imagens para envio à API...")
+    
+    temp_model_path = None
+    temp_roupa_path = None
+    
+    try:
+        # Validação do tipo de imagem do modelo
+        if not hasattr(image, 'save'):
+            st.error("Formato de imagem do modelo inválido.")
+            return
+        
+        # Validação do arquivo de roupa
+        if uploaded_roupa_img.size == 0:
+            st.error("Arquivo da roupa está vazio.")
+            return
+        
+        # Cria diretório temporário se não existir
+        temp_dir = tempfile.gettempdir()
+        os.makedirs(temp_dir, exist_ok=True)
+        
+        # Salva imagem do modelo (pessoa)
+        temp_model_path = os.path.join(temp_dir, f"model_image_{int(time.time())}.jpg")
         try:
-            # Salva imagem do modelo (pessoa)
-            temp_model_path = os.path.join(tempfile.gettempdir(), "model_image.jpg")
-            image.save(temp_model_path)
-
-            # Salva imagem da roupa
-            temp_roupa_path = os.path.join(tempfile.gettempdir(), "roupa_image.jpg")
+            image.save(temp_model_path, format='JPEG', quality=95)
+        except Exception as e:
+            st.error(f"Erro ao salvar imagem do modelo: {str(e)}")
+            return
+        
+        # Verifica se o arquivo do modelo foi salvo corretamente
+        if not os.path.exists(temp_model_path) or os.path.getsize(temp_model_path) == 0:
+            st.error("Falha ao salvar imagem do modelo.")
+            return
+        
+        # Salva imagem da roupa
+        temp_roupa_path = os.path.join(temp_dir, f"roupa_image_{int(time.time())}.jpg")
+        try:
+            # Reset do ponteiro do arquivo
+            uploaded_roupa_img.seek(0)
+            roupa_bytes = uploaded_roupa_img.read()
+            
+            if len(roupa_bytes) == 0:
+                st.error("Arquivo da roupa está vazio ou corrompido.")
+                return
+            
             with open(temp_roupa_path, "wb") as f:
-                f.write(uploaded_roupa_img.read())
-
-            # Monta o payload
-            with open(temp_model_path, "rb") as model_file, open(temp_roupa_path, "rb") as roupa_file:
-                files = {
-                    "image": model_file,
-                    "cloth": roupa_file
-                }
-
-                headers = {
-                    "x-rapidapi-key": "cbdf7f1abcmshbdd93e49bcc8466p132ccdjsnfe426af1b090",
-                    "x-rapidapi-host": "try-on-diffusion.p.rapidapi.com"
-                }
-
-                with st.spinner("Processando imagem..."):
+                f.write(roupa_bytes)
+        except Exception as e:
+            st.error(f"Erro ao salvar imagem da roupa: {str(e)}")
+            return
+        
+        # Verifica se o arquivo da roupa foi salvo corretamente
+        if not os.path.exists(temp_roupa_path) or os.path.getsize(temp_roupa_path) == 0:
+            st.error("Falha ao salvar imagem da roupa.")
+            return
+        
+        # Configuração da API
+        headers = {
+            "x-rapidapi-key": "cbdf7f1abcmshbdd93e49bcc8466p132ccdjsnfe426af1b090",
+            "x-rapidapi-host": "try-on-diffusion.p.rapidapi.com"
+        }
+        
+        # Faz a requisição para a API
+        with st.spinner("Processando imagem..."):
+            try:
+                with open(temp_model_path, "rb") as model_file, open(temp_roupa_path, "rb") as roupa_file:
+                    files = {
+                        "image": model_file,
+                        "cloth": roupa_file
+                    }
+                    
                     response = requests.post(
                         "https://try-on-diffusion.p.rapidapi.com/try-on-file",
                         files=files,
-                        headers=headers
+                        headers=headers,
+                        timeout=60  # Timeout de 60 segundos
                     )
-
-            if response.status_code != 200:
-                st.error(f"Erro da API: {response.status_code} - {response.text}")
+                    
+            except requests.exceptions.Timeout:
+                st.error("Timeout: A API demorou muito para responder. Tente novamente.")
                 return
-
-            # A resposta da API vem com a URL da imagem resultante
-            result_json = response.json()
+            except requests.exceptions.ConnectionError:
+                st.error("Erro de conexão: Verifique sua conexão com a internet.")
+                return
+            except requests.exceptions.RequestException as e:
+                st.error(f"Erro na requisição: {str(e)}")
+                return
+        
+        # Verifica o status da resposta
+        if response.status_code == 200:
+            # Tenta fazer parse do JSON
+            try:
+                result_json = response.json()
+            except ValueError as e:
+                st.error(f"Erro ao decodificar resposta JSON: {str(e)}")
+                st.error(f"Resposta recebida: {response.text[:500]}...")
+                return
+            
+            # Verifica se a resposta contém o URL da imagem
             output_url = result_json.get("output_url")
-
             if output_url:
-                st.image(output_url, caption="Resultado")
-                st.markdown(f"[Clique aqui para baixar a imagem gerada]({output_url})", unsafe_allow_html=True)
+                try:
+                    # Verifica se a URL é válida
+                    url_response = requests.head(output_url, timeout=10)
+                    if url_response.status_code == 200:
+                        st.success("Imagem processada com sucesso!")
+                        st.image(output_url, caption="Resultado")
+                        st.markdown(
+                            f"[Clique aqui para baixar a imagem gerada]({output_url})", 
+                            unsafe_allow_html=True
+                        )
+                    else:
+                        st.error("URL da imagem gerada não está acessível.")
+                except Exception as e:
+                    st.warning(f"Não foi possível verificar a URL, mas exibindo resultado: {str(e)}")
+                    st.image(output_url, caption="Resultado")
+                    st.markdown(
+                        f"[Clique aqui para baixar a imagem gerada]({output_url})", 
+                        unsafe_allow_html=True
+                    )
             else:
-                st.error("A resposta não contém uma imagem válida.")
-
+                st.error("A resposta da API não contém uma URL válida para a imagem.")
+                st.error(f"Resposta recebida: {result_json}")
+        
+        elif response.status_code == 400:
+            st.error("Erro 400: Dados inválidos enviados para a API. Verifique as imagens.")
+        elif response.status_code == 401:
+            st.error("Erro 401: Chave da API inválida ou não autorizada.")
+        elif response.status_code == 429:
+            st.error("Erro 429: Muitas requisições. Tente novamente em alguns minutos.")
+        elif response.status_code == 500:
+            st.error("Erro 500: Erro interno da API. Tente novamente mais tarde.")
+        else:
+            st.error(f"Erro da API: {response.status_code}")
+            try:
+                error_response = response.json()
+                st.error(f"Detalhes: {error_response}")
+            except:
+                st.error(f"Resposta: {response.text[:500]}...")
+    
+    except Exception as e:
+        st.error(f"Erro inesperado: {str(e)}")
+        st.error("Tente novamente ou entre em contato com o suporte.")
+    
+    finally:
+        # Limpeza dos arquivos temporários
+        try:
+            if temp_model_path and os.path.exists(temp_model_path):
+                os.remove(temp_model_path)
+            if temp_roupa_path and os.path.exists(temp_roupa_path):
+                os.remove(temp_roupa_path)
         except Exception as e:
-            st.error(f"Ocorreu um erro: {e}")
-
+            st.warning(f"Aviso: Não foi possível limpar arquivos temporários: {str(e)}")
 
 def main():
     # # Header
