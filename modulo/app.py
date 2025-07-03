@@ -1008,13 +1008,13 @@ def substituir_roupas_3(person_image):
                     result = client.predict(
                         src_image_path=handle_file(temp_person_path),
                         ref_image_path=handle_file(temp_garment_path),
-                        ref_acceleration="false",  # Parâmetro padrão conforme a documentação
+                        ref_acceleration=False,  # Corrigido de "false" para False
                         step=float(step),
                         scale=float(scale),
                         seed=float(seed),
                         vt_model_type=vt_model_type,
                         vt_garment_type=vt_garment_type,
-                        vt_repaint="false", # Parâmetro padrão conforme a documentação
+                        vt_repaint=False, # Corrigido de "false" para False
                         api_name="/leffa_predict_vt"
                     )
 
