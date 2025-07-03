@@ -989,7 +989,7 @@ def substituir_roupas_3(person_image):
         # Botão para iniciar o processamento
         if st.button("✨ Aplicar Nova Roupa"):
             st.write("Preparando imagens para o modelo...")
-
+            temp_dir = None # Inicializa a variável para o bloco finally
             try:
                 # Cria diretórios temporários para salvar as imagens
                 temp_dir = tempfile.mkdtemp()
@@ -1008,13 +1008,13 @@ def substituir_roupas_3(person_image):
                     result = client.predict(
                         src_image_path=handle_file(temp_person_path),
                         ref_image_path=handle_file(temp_garment_path),
-                        ref_acceleration=False,  # Corrigido de "false" para False
+                        ref_acceleration=False,
                         step=float(step),
                         scale=float(scale),
                         seed=float(seed),
                         vt_model_type=vt_model_type,
                         vt_garment_type=vt_garment_type,
-                        vt_repaint=False, # Corrigido de "false" para False
+                        vt_repaint=False,
                         api_name="/leffa_predict_vt"
                     )
 
@@ -1048,10 +1048,19 @@ def substituir_roupas_3(person_image):
                     )
 
             except Exception as e:
-                st.error(f"Ocorreu um erro durante o processamento: {e}")
+                error_message = str(e)
+                if "The upstream Gradio app has raised an exception" in error_message:
+                    st.error(
+                        "**Ocorreu um erro no servidor do modelo de IA.**\n\n"
+                        "Isso geralmente acontece por um dos seguintes motivos:\n\n"
+                        "1.  **Imagem Inválida:** Tente usar uma imagem de pessoa ou de roupa diferente. Imagens com dimensões muito grandes, transparência (PNG) ou formatos incomuns podem causar falhas.\n"
+                        "2.  **Serviço Indisponível:** O serviço no Hugging Face pode estar temporariamente sobrecarregado ou offline. Por favor, tente novamente mais tarde."
+                    )
+                else:
+                    st.error(f"Ocorreu um erro inesperado durante o processamento: {error_message}")
             finally:
                 # Limpa o diretório temporário após o uso
-                if 'temp_dir' in locals() and os.path.exists(temp_dir):
+                if temp_dir and os.path.exists(temp_dir):
                     shutil.rmtree(temp_dir)
 
 def main():
