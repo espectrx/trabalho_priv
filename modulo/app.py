@@ -939,7 +939,7 @@ def substituir_roupas_2(image):
         except Exception as e:
             st.warning(f"Aviso: Não foi possível limpar arquivos temporários: {str(e)}")
 
-def substituir_roupa_3(person_image):
+def substituir_roupas_3(person_image):
     """
     Função para substituir a roupa em uma imagem de uma pessoa usando o modelo Leffa VTON.
 
