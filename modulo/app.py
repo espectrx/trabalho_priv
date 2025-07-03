@@ -1103,80 +1103,79 @@ def substituir_roupas_4(image_modelo):
 
     # --- Processamento ---
     if image_modelo and uploaded_roupa_img:
-        if st.button("Gerar Look ✨"):
-            st.write("Preparando imagens para o modelo...")
+        st.write("Preparando imagens para o modelo...")
 
-            try:
-                # Salva a imagem da pessoa (modelo) em um arquivo temporário
-                temp_modelo_path = os.path.join(tempfile.gettempdir(), "modelo_image.png")
-                image_modelo.save(temp_modelo_path)
+        try:
+            # Salva a imagem da pessoa (modelo) em um arquivo temporário
+            temp_modelo_path = os.path.join(tempfile.gettempdir(), "modelo_image.png")
+            image_modelo.save(temp_modelo_path)
 
-                # Salva a imagem da roupa em um arquivo temporário
-                temp_roupa_path = os.path.join(tempfile.gettempdir(), "roupa_image.png")
-                with open(temp_roupa_path, "wb") as f:
-                    f.write(uploaded_roupa_img.getvalue())
+            # Salva a imagem da roupa em um arquivo temporário
+            temp_roupa_path = os.path.join(tempfile.gettempdir(), "roupa_image.png")
+            with open(temp_roupa_path, "wb") as f:
+                f.write(uploaded_roupa_img.getvalue())
 
-                # Indica ao usuário que o processamento está em andamento
-                with st.spinner("Aplicando a roupa na imagem... Isso pode levar um minuto."):
-                    result = client.predict(
-                        # Parâmetro 1: Dicionário com a imagem de fundo (a pessoa)
-                        dict={
-                            "background": handle_file(temp_modelo_path),
-                            "layers": [],
-                            "composite": None
-                        },
-                        # Parâmetro 2: Imagem da peça de roupa
-                        garm_img=handle_file(temp_roupa_path),
-                        # Parâmetro 3: Descrição da roupa
-                        garment_des=descricao_roupa,
-                        # Parâmetro 4: Usar auto-masking (padrão)
-                        is_checked=True,
-                        # Parâmetro 5: Não cortar a imagem da roupa (padrão)
-                        is_checked_crop=False,
-                        # Parâmetro 6: Passos de remoção de ruído (qualidade)
-                        denoise_steps=30,
-                        # Parâmetro 7: Semente para aleatoriedade (-1 para aleatório)
-                        seed=-1,
-                        # Parâmetro 8: Categoria da roupa (essencial para o modelo)
-                        category=categoria_roupa,
-                        # Endpoint da API
-                        api_name="/tryon"
-                    )
+            # Indica ao usuário que o processamento está em andamento
+            with st.spinner("Aplicando a roupa na imagem... Isso pode levar um minuto."):
+                result = client.predict(
+                    # Parâmetro 1: Dicionário com a imagem de fundo (a pessoa)
+                    dict={
+                        "background": handle_file(temp_modelo_path),
+                        "layers": [],
+                        "composite": None
+                    },
+                    # Parâmetro 2: Imagem da peça de roupa
+                    garm_img=handle_file(temp_roupa_path),
+                    # Parâmetro 3: Descrição da roupa
+                    garment_des=descricao_roupa,
+                    # Parâmetro 4: Usar auto-masking (padrão)
+                    is_checked=True,
+                    # Parâmetro 5: Não cortar a imagem da roupa (padrão)
+                    is_checked_crop=False,
+                    # Parâmetro 6: Passos de remoção de ruído (qualidade)
+                    denoise_steps=30,
+                    # Parâmetro 7: Semente para aleatoriedade (-1 para aleatório)
+                    seed=-1,
+                    # Parâmetro 8: Categoria da roupa (essencial para o modelo)
+                    category=categoria_roupa,
+                    # Endpoint da API
+                    api_name="/tryon"
+                )
 
-                # A API retorna uma tupla com 2 caminhos de arquivo
-                if not isinstance(result, (list, tuple)) or len(result) < 2:
-                    st.error("Erro: A resposta do modelo foi inesperada. Tente novamente.")
-                    st.write("Resposta recebida:", result) # Para depuração
-                    return
+            # A API retorna uma tupla com 2 caminhos de arquivo
+            if not isinstance(result, (list, tuple)) or len(result) < 2:
+                st.error("Erro: A resposta do modelo foi inesperada. Tente novamente.")
+                st.write("Resposta recebida:", result) # Para depuração
+                return
 
-                # O primeiro item é a imagem final
-                output_path = result[0]
-                
-                # O segundo item (opcional) é a máscara, podemos ignorar ou exibir
-                # masked_path = result[1] 
+            # O primeiro item é a imagem final
+            output_path = result[0]
+            
+            # O segundo item (opcional) é a máscara, podemos ignorar ou exibir
+            # masked_path = result[1] 
 
-                # Copia a imagem de saída para um local temporário seguro
-                temp_out_path = os.path.join(tempfile.gettempdir(), "resultado_final.png")
-                shutil.copy(output_path, temp_out_path)
+            # Copia a imagem de saída para um local temporário seguro
+            temp_out_path = os.path.join(tempfile.gettempdir(), "resultado_final.png")
+            shutil.copy(output_path, temp_out_path)
 
-                # Exibe o resultado e o botão de download
-                st.image(temp_out_path, caption="✨ Imagem Finalizada! ✨", use_container_width=True)
-                with open(temp_out_path, "rb") as f:
-                    st.download_button(
-                        "Baixar imagem gerada", 
-                        f, 
-                        file_name="look_virtual.png",
-                        mime="image/png"
-                    )
+            # Exibe o resultado e o botão de download
+            st.image(temp_out_path, caption="✨ Imagem Finalizada! ✨", use_container_width=True)
+            with open(temp_out_path, "rb") as f:
+                st.download_button(
+                    "Baixar imagem gerada", 
+                    f, 
+                    file_name="look_virtual.png",
+                    mime="image/png"
+                )
 
-            except Exception as e:
-                st.error(f"Ocorreu um erro ao processar a imagem: {e}")
-            finally:
-                # Limpa os arquivos temporários para não ocupar espaço
-                if 'temp_modelo_path' in locals() and os.path.exists(temp_modelo_path):
-                    os.remove(temp_modelo_path)
-                if 'temp_roupa_path' in locals() and os.path.exists(temp_roupa_path):
-                    os.remove(temp_roupa_path)
+        except Exception as e:
+            st.error(f"Ocorreu um erro ao processar a imagem: {e}")
+        finally:
+            # Limpa os arquivos temporários para não ocupar espaço
+            if 'temp_modelo_path' in locals() and os.path.exists(temp_modelo_path):
+                os.remove(temp_modelo_path)
+            if 'temp_roupa_path' in locals() and os.path.exists(temp_roupa_path):
+                os.remove(temp_roupa_path)
 
 def main():
     # # Header
