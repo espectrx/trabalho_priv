@@ -8,7 +8,7 @@ import base64
 import os
 import traceback
 import glob
-from gradio_client import Client, file
+from gradio_client import Client, file, , handle_file
 import shutil
 import tempfile
 import sys
