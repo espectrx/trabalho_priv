@@ -1150,8 +1150,8 @@ def main():
             # st.code("print('Olá mundo')", language="python")
             # st.latex(r"E = mc^2")
 
-        substituir_roupas(image)
-        #substituir_roupas_2(image)
+        #substituir_roupas(image)
+        substituir_roupas_2(image)
 
     
         st.image(Image.open(os.path.join(diretorio_slide, "..", "data", "slides", "slide7.png")), use_container_width=True)
