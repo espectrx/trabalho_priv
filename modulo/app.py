@@ -939,6 +939,242 @@ def substituir_roupas_2(image):
         except Exception as e:
             st.warning(f"Aviso: Não foi possível limpar arquivos temporários: {str(e)}")
 
+def substituir_roupas_3(image):
+    """
+    Função para substituir roupas usando Hugging Face Transformers
+    Alternativa às APIs externas que podem estar instáveis
+    """
+    import requests
+    import json
+    import base64
+    from io import BytesIO
+    
+    # Upload da roupa
+    uploaded_roupa_img = st.file_uploader(
+        "Arraste a imagem da roupa ou envie alguma de sua escolha:", 
+        type=["jpg", "png", "jpeg", "webp"],
+        key="roupa_upload_3"
+    )
+    
+    if not image:
+        st.warning("Por favor, forneça uma imagem do modelo.")
+        return
+    
+    if not uploaded_roupa_img:
+        st.info("Aguardando upload da imagem da roupa...")
+        return
+    
+    st.write("Preparando imagens para processamento...")
+    
+    try:
+        # Função auxiliar para converter imagem para base64
+        def image_to_base64(img_pil):
+            buffered = BytesIO()
+            img_pil.save(buffered, format="PNG")
+            img_str = base64.b64encode(buffered.getvalue()).decode()
+            return img_str
+        
+        # Função auxiliar para redimensionar imagem
+        def resize_image(img_pil, max_size=512):
+            width, height = img_pil.size
+            if width > max_size or height > max_size:
+                ratio = min(max_size/width, max_size/height)
+                new_width = int(width * ratio)
+                new_height = int(height * ratio)
+                img_pil = img_pil.resize((new_width, new_height), Image.Resampling.LANCZOS)
+            return img_pil
+        
+        # Processa imagem do modelo
+        model_image = image.copy()
+        if model_image.mode != 'RGB':
+            model_image = model_image.convert('RGB')
+        model_image = resize_image(model_image)
+        
+        # Processa imagem da roupa
+        roupa_image = Image.open(uploaded_roupa_img)
+        if roupa_image.mode != 'RGB':
+            roupa_image = roupa_image.convert('RGB')
+        roupa_image = resize_image(roupa_image)
+        
+        # Mostra preview
+        col1, col2 = st.columns(2)
+        with col1:
+            st.image(model_image, caption="Modelo", width=200)
+        with col2:
+            st.image(roupa_image, caption="Roupa", width=200)
+        
+        # Opção 1: Hugging Face Inference API
+        st.write("Tentando processamento com Hugging Face...")
+        
+        with st.spinner("Processando com modelo de IA..."):
+            try:
+                # Usando API do Hugging Face para virtual try-on
+                API_URL = "https://api-inference.huggingface.co/models/yisol/IDM-VTON"
+                
+                # Converte imagens para base64
+                person_b64 = image_to_base64(model_image)
+                cloth_b64 = image_to_base64(roupa_image)
+                
+                # Payload para a API
+                payload = {
+                    "inputs": {
+                        "person_image": person_b64,
+                        "cloth_image": cloth_b64,
+                        "cloth_type": "upper_body"
+                    }
+                }
+                
+                # Headers com token (você pode usar sem token, mas com limitações)
+                headers = {
+                    "Content-Type": "application/json",
+                    # "Authorization": "Bearer YOUR_HUGGINGFACE_TOKEN"  # Opcional
+                }
+                
+                response = requests.post(API_URL, headers=headers, json=payload, timeout=120)
+                
+                if response.status_code == 200:
+                    # Decodifica a resposta
+                    try:
+                        response_data = response.json()
+                        if isinstance(response_data, list) and len(response_data) > 0:
+                            # Assume que a resposta contém a imagem em base64
+                            result_b64 = response_data[0].get('generated_image', '')
+                            if result_b64:
+                                # Decodifica e exibe
+                                result_bytes = base64.b64decode(result_b64)
+                                result_image = Image.open(BytesIO(result_bytes))
+                                
+                                st.success("Processamento concluído!")
+                                st.image(result_image, caption="Resultado", width=400)
+                                
+                                # Botão de download
+                                result_buffer = BytesIO()
+                                result_image.save(result_buffer, format="PNG")
+                                st.download_button(
+                                    label="Baixar imagem gerada",
+                                    data=result_buffer.getvalue(),
+                                    file_name=f"try_on_result_{int(time.time())}.png",
+                                    mime="image/png"
+                                )
+                                return
+                    except Exception as e:
+                        st.error(f"Erro ao processar resposta: {str(e)}")
+                
+                # Se chegou aqui, tenta abordagem alternativa
+                st.warning("Primeira tentativa não funcionou, tentando método alternativo...")
+                
+            except requests.exceptions.Timeout:
+                st.error("Timeout na primeira tentativa, tentando método alternativo...")
+            except Exception as e:
+                st.error(f"Erro na primeira tentativa: {str(e)}")
+                st.info("Tentando método alternativo...")
+        
+        # Opção 2: Método alternativo usando OpenCV para composição simples
+        st.write("Usando método alternativo de composição...")
+        
+        with st.spinner("Processando composição..."):
+            try:
+                import cv2
+                import numpy as np
+                
+                # Converte PIL para OpenCV
+                model_cv = cv2.cvtColor(np.array(model_image), cv2.COLOR_RGB2BGR)
+                roupa_cv = cv2.cvtColor(np.array(roupa_image), cv2.COLOR_RGB2BGR)
+                
+                # Redimensiona roupa para caber no modelo
+                h_model, w_model = model_cv.shape[:2]
+                h_roupa, w_roupa = roupa_cv.shape[:2]
+                
+                # Calcula posição para colocar a roupa (parte superior do corpo)
+                scale_factor = min(w_model * 0.7 / w_roupa, h_model * 0.4 / h_roupa)
+                new_w = int(w_roupa * scale_factor)
+                new_h = int(h_roupa * scale_factor)
+                
+                roupa_resized = cv2.resize(roupa_cv, (new_w, new_h))
+                
+                # Posiciona a roupa no centro-superior do modelo
+                x_offset = (w_model - new_w) // 2
+                y_offset = h_model // 4
+                
+                # Cria máscara para a roupa
+                mask = np.ones((new_h, new_w), dtype=np.uint8) * 255
+                
+                # Aplica a roupa no modelo
+                result_cv = model_cv.copy()
+                
+                # Garante que não sai dos limites da imagem
+                y_end = min(y_offset + new_h, h_model)
+                x_end = min(x_offset + new_w, w_model)
+                roupa_h = y_end - y_offset
+                roupa_w = x_end - x_offset
+                
+                if roupa_h > 0 and roupa_w > 0:
+                    # Aplica a roupa com blending
+                    roi = result_cv[y_offset:y_end, x_offset:x_end]
+                    roupa_crop = roupa_resized[:roupa_h, :roupa_w]
+                    
+                    # Blending simples (pode ser melhorado)
+                    alpha = 0.8
+                    blended = cv2.addWeighted(roi, 1-alpha, roupa_crop, alpha, 0)
+                    result_cv[y_offset:y_end, x_offset:x_end] = blended
+                
+                # Converte de volta para PIL
+                result_image = Image.fromarray(cv2.cvtColor(result_cv, cv2.COLOR_BGR2RGB))
+                
+                st.success("Composição concluída!")
+                st.image(result_image, caption="Resultado (Composição Simples)", width=400)
+                
+                # Botão de download
+                result_buffer = BytesIO()
+                result_image.save(result_buffer, format="PNG")
+                st.download_button(
+                    label="Baixar imagem gerada",
+                    data=result_buffer.getvalue(),
+                    file_name=f"try_on_simple_{int(time.time())}.png",
+                    mime="image/png"
+                )
+                
+            except Exception as e:
+                st.error(f"Erro no método alternativo: {str(e)}")
+                # Opção 3: Método mais básico - apenas sobreposição
+                st.write("Usando método básico de sobreposição...")
+                
+                try:
+                    # Cria uma composição muito simples
+                    result_image = model_image.copy()
+                    
+                    # Redimensiona e posiciona a roupa
+                    roupa_small = roupa_image.copy()
+                    roupa_small.thumbnail((model_image.width//2, model_image.height//3))
+                    
+                    # Posição no peito
+                    x_pos = (model_image.width - roupa_small.width) // 2
+                    y_pos = model_image.height // 4
+                    
+                    # Cola a roupa (método básico)
+                    result_image.paste(roupa_small, (x_pos, y_pos), roupa_small if roupa_small.mode == 'RGBA' else None)
+                    
+                    st.info("Resultado com método básico:")
+                    st.image(result_image, caption="Resultado (Sobreposição Básica)", width=400)
+                    
+                    # Botão de download
+                    result_buffer = BytesIO()
+                    result_image.save(result_buffer, format="PNG")
+                    st.download_button(
+                        label="Baixar imagem gerada",
+                        data=result_buffer.getvalue(),
+                        file_name=f"try_on_basic_{int(time.time())}.png",
+                        mime="image/png"
+                    )
+                    
+                except Exception as e:
+                    st.error(f"Erro em todos os métodos: {str(e)}")
+                    st.error("Não foi possível processar as imagens com nenhum método disponível.")
+    
+    except Exception as e:
+        st.error(f"Erro geral: {str(e)}")
+        st.error("Verifique se as imagens estão em formato válido e tente novamente.")
+
 def main():
     # # Header
     # st.markdown('<h1 class="main-header">VesteAI</h1>', unsafe_allow_html=True)
@@ -1396,7 +1632,8 @@ def main():
             # st.latex(r"E = mc^2")
 
         #substituir_roupas(image)
-        substituir_roupas_2(image)
+        #substituir_roupas_2(image)
+        substituir_roupas_3(image)
 
     
         st.image(Image.open(os.path.join(diretorio_slide, "..", "data", "slides", "slide7.png")), use_container_width=True)
