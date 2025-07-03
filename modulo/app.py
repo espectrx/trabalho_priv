@@ -1087,18 +1087,19 @@ def substituir_roupas_4(image_modelo):
     )
 
     # 2. Seleção da categoria da roupa
-    categoria_roupa = st.selectbox(
-        "Selecione a categoria da peça:",
-        ('upper_body', 'lower_body', 'dresses'),
-        help="Escolha 'upper_body' para camisetas e blusas, 'lower_body' para calças e saias, e 'dresses' para vestidos."
-    )
+    # categoria_roupa = st.selectbox(
+    #     "Selecione a categoria da peça:",
+    #     ('upper_body', 'lower_body', 'dresses'),
+    #     help="Escolha 'upper_body' para camisetas e blusas, 'lower_body' para calças e saias, e 'dresses' para vestidos."
+    # )
+    categoria_roupa = 'upper_body'
     
     # 3. Descrição opcional da roupa
-    descricao_roupa = st.text_input(
-        "Descrição da roupa (opcional):", 
-        "uma peça de roupa",
-        help="Ex: 'uma camisa de algodão azul'"
-    )
+    # descricao_roupa = st.text_input(
+    #     "Descrição da roupa (opcional):", 
+    #     "uma peça de roupa",
+    #     help="Ex: 'uma camisa de algodão azul'"
+    # )
 
     # --- Processamento ---
     if image_modelo and uploaded_roupa_img:
@@ -1159,7 +1160,7 @@ def substituir_roupas_4(image_modelo):
                 shutil.copy(output_path, temp_out_path)
 
                 # Exibe o resultado e o botão de download
-                st.image(temp_out_path, caption="✨ Look Finalizado! ✨", use_column_width=True)
+                st.image(temp_out_path, caption="✨ Imagem Finalizada! ✨", use_container_width=True)
                 with open(temp_out_path, "rb") as f:
                     st.download_button(
                         "Baixar imagem gerada", 
