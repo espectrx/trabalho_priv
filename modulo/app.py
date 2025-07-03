@@ -13,6 +13,7 @@ import shutil
 import tempfile
 import sys
 import requests
+import time
 
 sys.path.append(os.path.dirname(__file__))
 # from processamento import extrair_dados_da_imagem
