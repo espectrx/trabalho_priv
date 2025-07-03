@@ -1160,14 +1160,17 @@ def substituir_roupas_4(image_modelo):
             shutil.copy(output_path, temp_out_path)
 
             # Exibe o resultado e o botão de download
-            st.image(temp_out_path, caption="✨ Imagem Finalizada! ✨", use_container_width=True)
-            with open(temp_out_path, "rb") as f:
-                st.download_button(
-                    "Baixar imagem gerada", 
-                    f, 
-                    file_name="look_virtual.png",
-                    mime="image/png"
-                )
+            col1, col2 = st.columns([1, 2])
+
+            with col1:
+                st.image(temp_out_path, caption="✨ Imagem Finalizada! ✨", use_container_width=True)
+                with open(temp_out_path, "rb") as f:
+                    st.download_button(
+                        "Baixar imagem gerada", 
+                        f, 
+                        file_name="look_virtual.png",
+                        mime="image/png"
+                    )
 
         except Exception as e:
             st.error(f"Ocorreu um erro ao processar a imagem: {e}")
