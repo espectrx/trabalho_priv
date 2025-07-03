@@ -1100,6 +1100,7 @@ def substituir_roupas_4(image_modelo):
     #     "uma peça de roupa",
     #     help="Ex: 'uma camisa de algodão azul'"
     # )
+    descricao_roupa = ''
 
     # --- Processamento ---
     if image_modelo and uploaded_roupa_img:
